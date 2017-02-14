@@ -2,7 +2,6 @@ library(dplyr)
 library(GGally)
 library(survival)
 library(ROCR)
-
 df <- read.csv("SBA_loan_data_new.csv")
 set.seed(1)
 
@@ -33,9 +32,10 @@ for (i in 1:length(df_new$BorrState)) {
 df_new=cbind(df_new,SBLR)
 
 # Average HPI Index by State for 1990-2016
-hpi_state <- read.csv("hpi_state.csv", header=TRUE, stringsAsFactors=FALSE)
+hpi_state <- read.csv("hpi_state.csv", header=TRUE, stringsAsFactors=F)
+hpi_state$ProjectState = as.factor(hpi_state$ProjectState)
 df_new <- left_join(df_new, hpi_state, by=c("ProjectState", "ApprovalFiscalYear"))
-
+df_new$mn_hpi = as.numeric(df_new$mn_hpi)
 # Filtering out Loans which are canceled or exempt
 
 df_new <- filter(df_new, LoanStatus != "CANCLD")
@@ -65,6 +65,7 @@ df_new <- df_new[,-c(4,5,6,7)]
 
 df_new$isDefault <- ifelse(df_new$LoanStatus=="CHGOFF",1,0)
 df_new$isDefault <- factor(df_new$isDefault)
+df_new$isDefault <- as.numeric(df_new$isDefault)
 df_new$NotSameState <- factor(df_new$NotSameState)
 df_new$ThirdPartyApproved <- factor(df_new$ThirdPartyApproved)
 
@@ -148,8 +149,16 @@ auc
 
 # Survival Analysis
 
-mod.coxph <- coxph(Surv(dayselapsed,isDefault)~GrossApproval+TermInMonths+DeliveryMethod,data=df.train.ts)
+mod.coxph <- coxph(Surv(dayselapsed,isDefault)~GrossApproval,data=df.train.ts)
+mod.coxph
+mod.coxph.prob = predict(mod.coxph, type = "risk")
+mod.coxph.pred = rep(0, nrow(df.train.ts))
+mod.coxph.pred[mod.coxph.prob>0.2] = 1
+mod.coxph.prob = as.factor(mod.coxph.pred)
+table(mod.coxph.pred, df.train.ts$isDefault)
+mean(mod.coxph.pred==df.train.ts$isDefault)
 
-class(df.train.ts$dayselapsed)
+class(df.train.ts$ThirdPartyApproved)
+unique(df.train.ts$DeliveryMethod)
 
 
