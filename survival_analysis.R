@@ -56,11 +56,16 @@ auc
 
 # Survival Analysis
 
-mod.coxph <- coxph(Surv(dayselapsed,isDefault)~GrossApproval,data=df.train.ts)
+mod.coxph <- coxph(Surv(dayselapsed,isDefault)~GrossApproval+Naics2digits+DeliveryMethod
+                   ,data=df.train.ts)
 mod.coxph
 mod.coxph.prob = predict(mod.coxph, type = "risk")
-mod.coxph.pred = rep(0, nrow(df.train.ts))
-mod.coxph.pred[mod.coxph.prob>0.5] = 1
-mod.coxph.prob = as.factor(mod.coxph.pred)
+mod.coxph.pred = rep(1, nrow(df.train.ts))
+mod.coxph.pred[mod.coxph.prob>=2.4] = 2
 table(mod.coxph.pred, df.train.ts$isDefault)
 mean(mod.coxph.pred==df.train.ts$isDefault)
+
+plot(survfit(mod.coxph),ylim = c(0.9,1))
+hist(mod.coxph.prob)
+
+plot(survfit(mod.coxph,newdata = df.test.ts[1:10,]),ylim=c(0.6,1))
