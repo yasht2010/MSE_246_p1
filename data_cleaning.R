@@ -100,6 +100,26 @@ df <- df[,-c(12,13)]
 
 df <- mutate(df,Naics2digits = substr(NaicsCode,1,2))
 
+
+interest_rates=matrix(0,nrow=length(df$ApprovalFiscalYear),ncol=length(1990:2014))
+
+for (i in 1:length(1990:2014)) {
+  interest_rates[,i]=interest_rates_data[match(1989+i,interest_rates_data$Year),2]
+}
+
+for (i in 1:length(df$ApprovalFiscalYear)){
+
+  if ((round(df$dayselapsed[i]/365)+1990) < 2014) {
+    j = 2014-(round(df$dayselapsed[i]/365)+1990)
+    column_final=length(1990:(round(df$dayselapsed[i]/365)+1990))
+    
+    for (n in  column_final:25){
+      interest_rates[i,n]==0}
+  }
+}
+
+
+
 # Writing the cleaned dataframe to a csv file
 
 write.csv(df,file = "SBA_cleaned_data.csv")
