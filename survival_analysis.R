@@ -78,7 +78,7 @@ plot(survfit(mod.coxph,newdata = df.test.ts[1:10,]),ylim=c(0.6,1))
 
 set.seed(1)
 
-defaultEvent <- as.data.frame(as.numeric(glm.pred.val)-1)
+defaultEvent <- as.data.frame(as.numeric(glm.prob.val)-1)
 grossApprovedAmount <- as.data.frame(df.valid.ts$GrossApproval)
 
 VaRTable <- cbind(defaultEvent,grossApprovedAmount)
@@ -89,6 +89,19 @@ VaRTable <- VaRTable[VaRTable$defaultEvent>0,]
 df_default <- df[df$GrossChargeOffAmount>0,]
 lossRatio <- df_default$GrossChargeOffAmount/df_default$GrossApproval
 plot(density(lossRatio),main = "Loss Given Default")
+
+# Model 1
+# Probability of default
+# Model 2
+# LGD Model
+# F(X,y) = P(LGD = y|X)
+# Fit model only defaulted loans 
+
+# sampling algorithm (non-parametric approach) - 
+# F is a cumulative distribution
+# generate a std. uniform variable u
+# set L = F-1(u)
+# L is a sample from LGD
 
 ## For multiple iterations (Monte Carlo sim)
 loss <- rep(0,1000)
