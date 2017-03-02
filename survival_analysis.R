@@ -101,4 +101,6 @@ for(i in 1:1000){
 }
 # Plot the sum of expected loss for each. Find the VaR corresponding to 99%, 99.9% levels
 hist(loss)
-quantile(loss,c(.95,.99))
+VaR_99 <- quantile(loss,c(.99))
+loanBookSize <- sum(as.numeric(df.valid.ts$GrossApproval))
+VaR_99/loanBookSize
