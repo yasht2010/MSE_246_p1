@@ -69,3 +69,36 @@ plot(survfit(mod.coxph),ylim = c(0.9,1))
 hist(mod.coxph.prob)
 
 plot(survfit(mod.coxph,newdata = df.test.ts[1:10,]),ylim=c(0.6,1))
+
+
+## Value at Risk Computation
+
+# Choose portfolio of loans
+# Find the predicted default for each of those loans at the end of 1 and 5 years
+
+set.seed(1)
+
+defaultEvent <- as.data.frame(as.numeric(glm.pred.val)-1)
+grossApprovedAmount <- as.data.frame(df.valid.ts$GrossApproval)
+
+VaRTable <- cbind(defaultEvent,grossApprovedAmount)
+colnames(VaRTable) <- c("defaultEvent","grossApprovedAmount")
+VaRTable <- VaRTable[VaRTable$defaultEvent>0,]
+
+# Get Loss given default distribution
+df_default <- df[df$GrossChargeOffAmount>0,]
+lossRatio <- df_default$GrossChargeOffAmount/df_default$GrossApproval
+plot(density(lossRatio),main = "Loss Given Default")
+
+## For multiple iterations (Monte Carlo sim)
+loss <- rep(0,1000)
+for(i in 1:1000){
+  # Using the distribution for the Loss Given Default, find the expected loss for each loan
+  VaRTable$lgd <- sample(lossRatio,nrow(VaRTable),replace = TRUE)
+  VaRTable$loss <- VaRTable$lgd*VaRTable$grossApprovedAmount
+  # sum the expected loss and save it
+  loss[i] <- sum(VaRTable$loss)
+}
+# Plot the sum of expected loss for each. Find the VaR corresponding to 99%, 99.9% levels
+hist(loss)
+quantile(loss,c(.95,.99))
