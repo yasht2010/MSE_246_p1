@@ -113,10 +113,10 @@ matrix_test=matrix(0,nrow=10000,ncol=13)
 end_index=0
 
 x=c("Loan Number","Start","Stop","Interest Rate","Default","Date of Loan Termination","ApprovalFiscalYear",
-    "GrossApproval","BusinessType","NaicsCode","UnemploymentRate","SBLR","Default Time")
+    "GrossApproval","BusinessType","NaicsCode","UnemploymentRate","SBLR","DefaultTime")
 colnames(matrix_test)=x
 
-for (i in 1:3) {
+for (i in 1:nrow(df)) {
   #print(i)
   start=df$ApprovalFiscalYear[i]
   stop=df$ApprovalFiscalYear[i]+round(df$dayselapsed[i]/365)
@@ -154,10 +154,19 @@ for (i in 1:3) {
   print(end_index)
 }
 
+matrix_test=data.frame(matrix_test)
+
+for (i in 1:length(matrix_test$ApprovalFiscalYear)) {
+  if (sum(matrix_test[i,]=0)) {
+    matrix_test[i,]=NA }
+}
+
+
+
 
 #Cox time dependant variable function 
 
-cox_reg=coxph(Surv(start,stop,))
+cox_reg=coxph(Surv(Start,Stop,DefaultTime)~ApprovalFiscalYear,GrossApproval,UnemploymentRate,data=matrix_test)
 
 
 
@@ -177,3 +186,7 @@ for (i in 1:length(df$ApprovalFiscalYear)){
 # Writing the cleaned dataframe to a csv file
 
 write.csv(df,file = "SBA_cleaned_data.csv")
+
+
+# Step 1 Model 1. Probability of default P(xi,beta i) 
+# Model 2. LGD model P(LGD< y|Xi)
