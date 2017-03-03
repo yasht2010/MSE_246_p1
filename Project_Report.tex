@@ -1,9 +1,11 @@
 \documentclass[]{report}
 \usepackage{comment}
+\usepackage{tabto}
 \usepackage{listings}  % Lets us directly place R code in report
 
 % Title Page
 \title{MS\&E 246 Project Report}
+\date{March 2, 2017}
 \author{Brent, Daniel, Peng, and Yash}
 
 
@@ -11,12 +13,35 @@
 \maketitle
 
 \section*{Introduction}
-	Credit risk evaluation is an important task for lenders. Understanding the likelihood that each borrower has of not paying the loan back in full allows them the ability to ensure they receive their funds back in full. Furthermore, it allows them to (put some crap in about tranches).
+
+	\tab Credit risk evaluation is an important task for lenders. In order to ensure they profit off their loans, lenders need to understand both the likelihood of any borrower defaulting and the likely amount of funds lost when a borrower defaults. Then, they need to predict the Value at Risk (VaR), securitize the loans, and use VaR percentiles to create different loan tranches for investors.
 	
-	In this project, we looked at loans backed by the SBA from 1990-2014. (Explain tasks)
+	In this project, we looked at loans backed by the SBA from 1990-2014. We bolstered our dataset with data on the Housing Price Index, National Unemployment Rate, US Treasury Rate, S\&P 500, Fed Interest Rate, \& Consumer Price Index.	We then used a Cox Regression model to estimate the likelihood of default, and a Logistic Regression model to estimate the loss proportion of the loan. Finally, we used Monte Carlo simulation to generate a sample VaR distribution and used the [5, 15]\% values to create different loan tranches for investors.
 	
-\section*{Data Cleaning}
-	More fucking text
+\section*{Data Preparation}
+
+	\tab In order to prepare the dataset for analysis, we added extra covariates  and thoroughly cleaned the data. Here, we will outline all of the covariates added to our data, the steps taken to clean our data, and our rationale behind both sets of steps.
+	
+	\subsection*{Added Covariates}
+	
+	\subsubsection{Federal Interest Rate}
+		\tab The federal interest rate is the rate controlled by the feds to help maintain a healthy economy. When the Feds adjust their interest rate, they also incentivize banks to provide loans at the corresponding interest rate. Therefore, when the federal interest rate is higher, fewer people and businesses will take out loans, and when the federal interest rate is lower, more people and businesses will take out loans. It stands to reason that when the federal interest rate is lower, those with a higher likelihood of default are more likely to take out loans.
+		
+		\subsubsection*{Unemployment Rate}
+		\tab The unemployment rate is a macroeconomic variable measuring the percentage of the work force that is out of work. As this rises, the likelihood that a borrower is unable to pay the loan due to unemployment increases; thus this variable could 
+		
+		\subsubsection*{Cost of Tornadoes}
+		Tornadoes cost businesses money
+		
+		\subsubsection*{Small Business Lending Data}
+		Intuitive(?)
+		
+		\subsubsection*{House Pricing Index}
+		Houses 
+	
+	
+	\subsection*{Data Cleaning}
+		Data!
 	
 \section*{Data Exploration}
 	Still more
@@ -24,11 +49,13 @@
 \section*{Modeling Risk}
 	All things modeling
 
-\section*{Predicting Risk}
+\section*{Predicting Loss}
 	All things VaR and Tranches
 	
 \section*{Summary}
 	Main points
+	
+\section*{References}
 	
 
 \end{document}          
