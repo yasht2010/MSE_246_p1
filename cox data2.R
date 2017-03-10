@@ -120,8 +120,8 @@ x=c("Loan Number","Start","Stop","Interest Rate","Default","Date of Loan Termina
     "GrossApproval","BusinessType","NaicsCode","UnemploymentRate","SBLR","DefaultTime","GDP Industry","HPI_state")
 colnames(matrix_test)=x
 
-df_const <- subset(df,select = c(SBLR,isDefault,ApprovalFiscalYear,
-                     GrossApproval,BusinessType,NaicsCode))
+df_const <- as.matrix(subset(df,select = c(SBLR,isDefault,ApprovalFiscalYear,
+                     GrossApproval,BusinessType,NaicsCode)))
 
 for (i in 1:5) {
   #print(i)
@@ -135,8 +135,6 @@ for (i in 1:5) {
   GDP_start_index=match(start,GDPSectorData[1,])
   HPI_start_index=match(interaction(df$BorrState[i],start),interaction(hpi_state$ProjectState, hpi_state$ApprovalFiscalYear))
   
-                        
-  
   if(stop<=2014){
     for (j in 1:periods) { 
       matrix_test[end_index+j,1]=i 
@@ -144,7 +142,7 @@ for (i in 1:5) {
       matrix_test[end_index+j,2]= start+n
       matrix_test[end_index+j,3]= start+n+1
       matrix_test[end_index+j,4]= interest_rates[start-1990+j]  
-      matrix_test[end_index+j,c(12,5,7,8,9)]= df_const[i]
+      matrix_test[end_index+j,c(12,5,7,8,9)]= df_const[i,]
       
       #matrix_test[end_index+j,12]=df$SBLR[i]
       #matrix_test[end_index+j,5]= df$isDefault[i]
