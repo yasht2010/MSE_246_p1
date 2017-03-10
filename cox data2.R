@@ -120,12 +120,23 @@ x=c("Loan Number","Start","Stop","Interest Rate","Default","Date of Loan Termina
     "GrossApproval","BusinessType","NaicsCode","UnemploymentRate","SBLR","DefaultTime","GDP Industry","HPI_state")
 colnames(matrix_test)=x
 
-for (i in 1:nrow(df)) {
+df_const <- subset(df,select = c(SBLR,isDefault,ApprovalFiscalYear,
+                     GrossApproval,BusinessType,NaicsCode))
+
+for (i in 1:5) {
   #print(i)
   start=df$ApprovalFiscalYear[i]
   stop=df$ApprovalFiscalYear[i]+round(df$dayselapsed[i]/365)
   periods=length(start:stop)     
   n=0
+  unemployment_start_index=match(start,unemployment_data[1,])
+  unemployment_state_index=match(df$BorrState[i],unemployment_data[,3])
+  GDP_NAICS_index=match(df$Naics2digits[i],GDPSectorData[,2])
+  GDP_start_index=match(start,GDPSectorData[1,])
+  HPI_start_index=match(interaction(df$BorrState[i],start),interaction(hpi_state$ProjectState, hpi_state$ApprovalFiscalYear))
+  
+                        
+  
   if(stop<=2014){
     for (j in 1:periods) { 
       matrix_test[end_index+j,1]=i 
@@ -133,14 +144,18 @@ for (i in 1:nrow(df)) {
       matrix_test[end_index+j,2]= start+n
       matrix_test[end_index+j,3]= start+n+1
       matrix_test[end_index+j,4]= interest_rates[start-1990+j]  
-      matrix_test[end_index+j,5]= df$isDefault[i]
-      matrix_test[end_index+j,7]= df$ApprovalFiscalYear[i]
-      matrix_test[end_index+j,8]= df$GrossApproval[i]
-      matrix_test[end_index+j,9]= df$BusinessType[i]
-      matrix_test[end_index+j,10]= df$NaicsCode[i]
-      matrix_test[end_index+j,11]=unemployment_data[match(df$BorrState[i],unemployment_data[,3]),match(start+n,unemployment_data[1,])]
-      matrix_test[end_index+j,12]=df$SBLR[i]
-      matrix_test[end_index+j,14]=GDPSectorData[match(df$Naics2digits[i],GDPSectorData[,2]),match(start+n,GDPSectorData[1,])]
+      matrix_test[end_index+j,c(12,5,7,8,9)]= df_const[i]
+      
+      #matrix_test[end_index+j,12]=df$SBLR[i]
+      #matrix_test[end_index+j,5]= df$isDefault[i]
+      #matrix_test[end_index+j,7]= df$ApprovalFiscalYear[i]
+      #matrix_test[end_index+j,8]= df$GrossApproval[i]
+      #matrix_test[end_index+j,9]= df$BusinessType[i]
+      #matrix_test[end_index+j,10]= df$NaicsCode[i]
+      matrix_test[end_index+j,11]=unemployment_data[unemployment_state_index,unemployment_start_index+n]
+      matrix_test[end_index+j,14]=GDPSectorData[GDP_NAICS_index,GDP_start_index+n]
+      matrix_test[end_index+j,15]=hpi_state[HPI_start_index+n,3]
+      
       n=n+1 
       
       
@@ -161,15 +176,17 @@ for (i in 1:nrow(df)) {
       #index_start=start-1989
       matrix_test[end_index+j,2]= start+n
       matrix_test[end_index+j,3]= start+n+1
-      matrix_test[end_index+j,4]= interest_rates[start-1990+j]  
-      matrix_test[end_index+j,5]= df$isDefault[i]
-      matrix_test[end_index+j,7]= df$ApprovalFiscalYear[i]
-      matrix_test[end_index+j,8]= df$GrossApproval[i]
-      matrix_test[end_index+j,9]= df$BusinessType[i]
-      matrix_test[end_index+j,10]= df$NaicsCode[i]
-      matrix_test[end_index+j,11]=unemployment_data[match(df$BorrState[i],unemployment_data[,3]),match(start+n,unemployment_data[1,])]
-      matrix_test[end_index+j,12]=df$SBLR[i]
-      matrix_test[end_index+j,14]=GDPSectorData[match(df$Naics2digits[i],GDPSectorData[,2]),match(start+n,GDPSectorData[1,])]
+      matrix_test[end_index+j,4]= interest_rates[start-1990+j] 
+      matrix_test[end_index+j,c(12,5,7,8,9)]= df_const[i]
+      #matrix_test[end_index+j,12]=df$SBLR[i]
+      #matrix_test[end_index+j,5]= df$isDefault[i]
+      #matrix_test[end_index+j,7]= df$ApprovalFiscalYear[i]
+      #matrix_test[end_index+j,8]= df$GrossApproval[i]
+      #matrix_test[end_index+j,9]= df$BusinessType[i]
+      #matrix_test[end_index+j,10]= df$NaicsCode[i]
+      matrix_test[end_index+j,11]=unemployment_data[unemployment_state_index,unemployment_start_index+n]
+      matrix_test[end_index+j,14]=GDPSectorData[GDP_NAICS_index,GDP_start_index+n]
+      matrix_test[end_index+j,15]=hpi_state[HPI_start_index+n,3]
       n=n+1 
       
       
