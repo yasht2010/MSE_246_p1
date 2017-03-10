@@ -212,7 +212,7 @@ for (i in 1:15000) {
     
   }
   else{
-    print("a")
+    #print("a")
     for (j in 1:(2014-start)) {
       tempRow = matrix(0,nrow=1,ncol=15)
       tempRow[1,1] = i
@@ -244,17 +244,17 @@ for (i in 1:15000) {
         tempRow[1,6]=stop
         if((start+n)==stop){tempRow[1,13]=1}
         #matrix_test[end_index+j,6]=stop
-        #matrix_test[end_index+periods,13]=1}
+        #matrix_test[end_index+periods,13]=1
+        }
       else {tempRow[1,6]=2040}# matrix_test[end_index+j,6]= 2040 
       n=n+1 
       matrix_test <- rbind(matrix_test,tempRow)
-      }
+      
       
     }
   }
-  a=length(which(matrix_test[,1]==0))
-  end_index=length(matrix_test[,1])-a
-  #print(end_index)
+  #a=length(which(matrix_test[,1]==0))
+
   if(nrow(matrix_test)>=1000){
     finalMatrix <- rbind(finalMatrix,matrix_test)
     matrix_test=matrix(0,nrow=0,ncol=15)
