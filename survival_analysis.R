@@ -78,17 +78,27 @@ plot(survfit(mod.coxph,newdata = df.test.ts[1:10,]),ylim=c(0.6,1))
 
 set.seed(1)
 
-defaultEvent <- as.data.frame(as.numeric(glm.prob.val)-1)
-grossApprovedAmount <- as.data.frame(df.valid.ts$GrossApproval)
-
-VaRTable <- cbind(defaultEvent,grossApprovedAmount)
-colnames(VaRTable) <- c("defaultEvent","grossApprovedAmount")
-VaRTable <- VaRTable[VaRTable$defaultEvent>0,]
-
 # Get Loss given default distribution
-df_default <- df[df$GrossChargeOffAmount>0,]
-lossRatio <- df_default$GrossChargeOffAmount/df_default$GrossApproval
-plot(density(lossRatio),main = "Loss Given Default")
+df.train.default <- df.train.ts[df.train.ts$isDefault==2,]
+df.valid.default <- df.valid.ts[df.valid.ts$isDefault==2,]
+# Inserting the probability of default
+df.train.default$probDef <- predict(glm.fit,newdata = df.train.default,type = "response")
+df.valid.default$probDef <- predict(glm.fit,newdata = df.valid.default,type = "response")
+
+# Removing isDefault from the default data set
+df.train.default <- subset(df.train.default,select = -c(isDefault))
+df.valid.default <- subset(df.valid.default,select = -c(isDefault))
+# Removing LoanStatus column
+df.train.default <- subset(df.train.default,select = -c(LoanStatus))
+df.valid.default <- subset(df.valid.default,select = -c(LoanStatus))
+
+model.loss.default <- lm(data = df.train.default,GrossChargeOffAmount~ GrossApproval*TermInMonths+
+                           GrossApproval*DeliveryMethod+Naics2digits)
+
+summary(model.loss.default)
+
+df.train.default$predLoss <- predict(model.loss.default,newdata = df.train.default)
+df.valid.default$predLoss <- predict(model.loss.default,newdata = df.valid.default)
 
 # Model 1
 # Probability of default
