@@ -169,7 +169,7 @@ df_const <- as.matrix(subset(df,select = c(BorrState,CDC_State,ThirdPartyDollars
                                            ApprovalDate,ApprovalFiscalYear,DeliveryMethod,
                                            TermInMonths,BusinessType,NotSameState,SBLR,Naics2digits)))
 
-for (i in 1:1000) {
+for (i in 1:nrow(df)) {
   start=df$ApprovalFiscalYear[i]
   stop=df$ApprovalFiscalYear[i]+round(df$dayselapsed[i]/365)
   periods=length(start:stop)     
@@ -192,8 +192,6 @@ for (i in 1:1000) {
       tempRow[1,7]=hpi_state[HPI_start_index+n,3]
       tempRow[1,8]=TED[start-1990+j,2]
       tempRow[1,9]=SNP500[start-1990+j,1]
-      # TED Spread
-      # S and P 500
       tempRow[1,as.numeric(10:21)] = df_const[i,]
       if(df$isDefault[i]==2){
         if((start+n)==stop){tempRow[1,22]=1}
@@ -209,14 +207,12 @@ for (i in 1:1000) {
       tempRow[1,1]=i
       tempRow[1,2]=start+n
       tempRow[1,3]=start+n+1
-      tempRow[1,4] = interest_rates[start-1990+j]
+      tempRow[1,4]=interest_rates[start-1990+j]
       tempRow[1,5]=GDPSectorData[GDP_NAICS_index,GDP_start_index+n]
       tempRow[1,6]=unemployment_data[unemployment_state_index,unemployment_start_index+n]
       tempRow[1,7]=hpi_state[HPI_start_index+n,3]
       tempRow[1,8]=TED[start-1990+j,2]
       tempRow[1,9]=SNP500[start-1990+j,1]
-      # TED Spread
-      # S and P 500
       tempRow[1,10:21] = df_const[i,]
       if(df$isDefault[i]==2){
         if((start+n)==stop){tempRow[1,22]=1}
@@ -246,17 +242,31 @@ finalMatrix$interestRate <- as.numeric(as.character(finalMatrix$interestRate))
 finalMatrix$hpiState <- as.numeric(as.character(finalMatrix$hpiState))
 finalMatrix$TermInMonths <- as.numeric(as.character(finalMatrix$TermInMonths))
 finalMatrix$SBLR <- as.numeric(as.character(finalMatrix$SBLR))
+finalMatrix$tedSpread <-as.numeric(as.character(finalMatrix$tedSpread))
+finalMatrix$sandp500 <- as.numeric(as.character(finalMatrix$sandp500))
 
 
 ```
 
 # Cox Model
+```{r}
+
+training_set=finalMatrix[1:520847,]
+test_set=finalMatrix[520848+1:nrow(finalMatrix),]
+
+
+
+```
 
 ```{r}
+
+
 library(survival)
-cox_reg=coxph(Surv(start,stop,isDefault)~GrossApproval+unemploymentRate+interestRate+hpiState+
+cox_reg=coxph(Surv(start,stop,isDefault)~GrossApproval+unemploymentRate+sandp500+hpiState+
                 BusinessType+TermInMonths+SBLR,
-              data=finalMatrix)
+              data=training_set)
+
+pred = predict(cox_reg,test_set)
 
 plot(survfit(cox_reg),ylim=c(0.6,1),xlim=c(1990,2014))
 summary(cox_reg)
