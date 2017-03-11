@@ -1,0 +1,28 @@
+
+Loan Characteristics - 
+
+BorrState
+CDC_State
+ThirdPartyDollars
+GrossApproval
+ApprovalDate
+ApprovalFiscalYear
+DeliveryMethod
+TermInMonths
+BusinessType
+NotSameState
+SBLR
+Naics2digits
+
+Response - 
+
+isDefault
+
+MacroEconomic Variables - 
+
+Interest Rate
+Unemployment Rate
+HPI_state
+GDP Industry
+TED spread
+S&P 500 (annual-average)
