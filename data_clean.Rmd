@@ -43,6 +43,8 @@ interest_rates_data <- read.csv("FED_IR.csv")
 Tornado_damage_economic <- read.csv("Tornado FL.csv")
 Small_business_lending_data <- read.csv("Small_Business_lending_stats.csv")
 GDPSectorData <- read.csv("GDP_Industry.csv")
+TED <- read.csv("TEDRATE.csv")
+SNP500 <- read.csv("SNP500.csv")
 ```
 
 ## Creating the SBLR and GDP data columns
@@ -167,7 +169,7 @@ df_const <- as.matrix(subset(df,select = c(BorrState,CDC_State,ThirdPartyDollars
                                            ApprovalDate,ApprovalFiscalYear,DeliveryMethod,
                                            TermInMonths,BusinessType,NotSameState,SBLR,Naics2digits)))
 
-for (i in 1:15000) {
+for (i in 1:1000) {
   start=df$ApprovalFiscalYear[i]
   stop=df$ApprovalFiscalYear[i]+round(df$dayselapsed[i]/365)
   periods=length(start:stop)     
@@ -188,6 +190,8 @@ for (i in 1:15000) {
       tempRow[1,5]=GDPSectorData[GDP_NAICS_index,GDP_start_index+n]
       tempRow[1,6]=unemployment_data[unemployment_state_index,unemployment_start_index+n]
       tempRow[1,7]=hpi_state[HPI_start_index+n,3]
+      tempRow[1,8]=TED[start-1990+j,2]
+      tempRow[1,9]=SNP500[start-1990+j,1]
       # TED Spread
       # S and P 500
       tempRow[1,as.numeric(10:21)] = df_const[i,]
@@ -209,6 +213,8 @@ for (i in 1:15000) {
       tempRow[1,5]=GDPSectorData[GDP_NAICS_index,GDP_start_index+n]
       tempRow[1,6]=unemployment_data[unemployment_state_index,unemployment_start_index+n]
       tempRow[1,7]=hpi_state[HPI_start_index+n,3]
+      tempRow[1,8]=TED[start-1990+j,2]
+      tempRow[1,9]=SNP500[start-1990+j,1]
       # TED Spread
       # S and P 500
       tempRow[1,10:21] = df_const[i,]
