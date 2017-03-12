@@ -245,10 +245,12 @@ finalMatrix$SBLR <- as.numeric(as.character(finalMatrix$SBLR))
 finalMatrix$tedSpread <-as.numeric(as.character(finalMatrix$tedSpread))
 finalMatrix$sandp500 <- as.numeric(as.character(finalMatrix$sandp500))
 
+# Export file
+write.csv(finalMatrix, file="big_data_Matrix.csv", col.names=FALSE)
 
 ```
 
-# Cox Model
+# Cox Model and logistic regression
 ```{r}
 
 training_set=finalMatrix[1:520847,]
@@ -262,33 +264,35 @@ test_set=finalMatrix[520848+1:nrow(finalMatrix),]
 
 
 library(survival)
-install.packages("peperr")
+library(peperr)
+
+## COX REGRESSION
+cox_reg <- coxph(Surv(start,stop,isDefault)~sandp500,data=training_set)
 cox_reg=coxph(Surv(start,stop,isDefault)~GrossApproval+unemploymentRate+sandp500+hpiState+
                 BusinessType+TermInMonths+SBLR,
               data=training_set)
+
+singulartest <- lm(sandp500~GrossApproval+unemploymentRate+hpiState+BusinessType+TermInMonths+SBLR,data=training_set)
 
 pred_cox_model= predictProb.coxph(cox_reg,Surv(test_set$start,test_set$isDefault),test_set,2010)
 
 pred = predict(cox_reg,test_set,type="expected")
 
+prob_default=1-exp(pred)
 
-log_reg=glm(isDefault ~ GrossApproval+hpiState+TermInMonths+SBLR,family=binomial,data=training_set)
+plot(survfit(cox_reg),ylim=c(0.6,1),xlim=c(1990,2014))
+summary(cox_reg)
+
+
+## LOGISTIC REGRESSION
+
+log_reg=glm(isDefault ~ GrossApproval+hpiState+TermInMonths+SBLR+sandp500+unemploymentRate+BusinessType,family=binomial,data=training_set)
 pred_log_reg=predict(log_reg,test_set,type="response")
 
 log_reg_predict_values=c(rep(0,nrow(test_set)))
 log_reg_predict_values[pred_log_reg>0.5] <-1 
 
 
-
-
-
-
-
-
-prob_default=1-exp(predict)
-
-plot(survfit(cox_reg),ylim=c(0.6,1),xlim=c(1990,2014))
-summary(cox_reg)
 
 ```
 
