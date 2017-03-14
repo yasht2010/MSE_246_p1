@@ -341,7 +341,20 @@ pred_log_reg=predict(log_reg,test_set,type="response")
 log_reg_predict_values=c(rep(0,nrow(test_set)))
 log_reg_predict_values[pred_log_reg>0.5] <-1 
 
+```
 
+
+# Loss given default
+
+```{r}
+
+loss_train <- filter(training_set, isDefault == 1)
+chg_vals <- select(df, GrossChargeOffAmount)
+chg_vals$loanNum <- c(1:nrow(df))
+loss_train <- left_join(loss_train, chg_vals, by="loanNum") # adding charge off values
+
+loss.mod <- lm(GrossChargeOffAmount~interestRate+unemploymentRate+hpiState+tedSpread+sandp500+BusinessType, data=loss_train)
 
 ```
+
 
