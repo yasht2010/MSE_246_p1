@@ -353,10 +353,12 @@ loss_train <- filter(training_set, isDefault == 1)
 chg_vals <- select(df, GrossChargeOffAmount)
 chg_vals$loanNum <- c(1:nrow(df))
 loss_train <- left_join(loss_train, chg_vals, by="loanNum") # adding charge off values
+loss_train <- loss_train[!is.na(loss_train$GrossChargeOffAmount),]
 
 # Set up loss validation set
 loss_valid <- filter(test_set, isDefault == 1)
 loss_valid <- left_join(loss_valid, chg_vals, by="loanNum") # adding charge off values
+loss_valid <- loss_valid[!is.na(loss_valid$GrossChargeOffAmount),]
 
 # Training loss model
 loss.mod <- lm(GrossChargeOffAmount~interestRate+unemploymentRate+hpiState+tedSpread+GrossApproval+TermInMonths+SBLR, data=loss_train)
@@ -364,10 +366,74 @@ summary(loss.mod)
 
 # Testing loss model, computing MSE
 loss.pred <- predict(loss.mod, newdata=loss_valid)
-loss.pred
+loss.pred <- loss.pred[!is.na(loss.pred)]
 loss.mse <- mean((loss_valid$GrossChargeOffAmount-loss.pred)^2)
 loss.mse
 
 ```
+
+# VaR Calculation
+
+```{r}
+
+## ONE YEAR LOSSES
+
+# TEMP: Sample default probabilities
+def.probs <- runif(500,0,1)
+
+# Monte Carlo values
+def.unif <- runif(500,0,1)
+
+# Matrix of default events
+test.def <- ifelse(def.unif>=def.probs, 1, 0)
+
+# Test loss predictions
+test.loss <- predict(loss.mod, newdata=test500_set)
+
+# Losses
+test.prob.loss <- test.loss * test.def
+
+loss.matrix <- matrix(nrow=500, ncol=500)
+loss.var95 <- rep(0,500)
+loss.avar95 <- rep(0,500)
+loss.var99 <- rep(0,500)
+loss.avar99 <- rep(0,500)
+
+# BOOTSTRAP
+for (i in 1:500) {
+  # fill in
+  for (j in 1:500) {
+    # Creating bootstrapped sample
+    curr.rows <- sample(c(1:500), replace=TRUE)
+    curr.vals <- test500_set[curr.rows,]
+    
+    # Getting losses
+    curr.prob.loss <- test.prob.loss[curr.rows,]
+    
+    # Calculating total loss, store it in matrix
+    total.loss <- sum(curr.prob.loss)
+    loss.matrix[i,j] <- total.loss
+  }
+  
+  # Calculate VaR for both confidence levels
+  curr.loss.sum <- loss.matrix[i,]
+  curr.var <- quantile(curr.loss.sum, probs = seq(0.95, 0.99))
+  
+  loss.var95[i] <- curr.var[1]
+  loss.var99[i] <- curr.var[2]
+  
+  # Calculate AVaR for both confidence levels
+  avar.vals95 <- curr.loss.sum[curr.loss.sum>=curr.var[1]]
+  ## NEED TO CALCULATE INTEGRAL
+  
+  avar.vals99 <- curr.loss.sum[curr.loss.sum>=curr.var[2]]
+  ## NEED TO CALCULATE INTEGRAL
+}
+
+## REPEAT FOR FIVE YEAR LOSSES
+```
+
+
+
 
 
