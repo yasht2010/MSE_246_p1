@@ -258,7 +258,7 @@ finalMatrix$sandp500 <- as.numeric(as.character(finalMatrix$sandp500))
 finalMatrix$loanNum <- as.numeric(as.character(finalMatrix$loanNum))
 
 # Export file
-write.csv(finalMatrix, file="big_data_Matrix.csv", col.names=FALSE)
+#write.csv(finalMatrix, file="big_data_Matrix.csv", col.names=FALSE)
 
 ```
 
@@ -292,7 +292,7 @@ cox_reg=coxph(Surv(start,stop,isDefault)~GrossApproval+unemploymentRate+hpiState
 
 singulartest <- lm(sandp500~GrossApproval+unemploymentRate+hpiState+BusinessType+TermInMonths+SBLR,data=training_set)
 
-time_eval=c(2008,2009,2010)
+time_eval=c(2008,2009,2010, 2011, 2012)
 time_eval2=2008
 
 test_set_time_eval=filter(test_set,start==time_eval)
@@ -348,12 +348,25 @@ log_reg_predict_values[pred_log_reg>0.5] <-1
 
 ```{r}
 
+# Set up loss training set
 loss_train <- filter(training_set, isDefault == 1)
 chg_vals <- select(df, GrossChargeOffAmount)
 chg_vals$loanNum <- c(1:nrow(df))
 loss_train <- left_join(loss_train, chg_vals, by="loanNum") # adding charge off values
 
-loss.mod <- lm(GrossChargeOffAmount~interestRate+unemploymentRate+hpiState+tedSpread+sandp500+BusinessType, data=loss_train)
+# Set up loss validation set
+loss_valid <- filter(test_set, isDefault == 1)
+loss_valid <- left_join(loss_valid, chg_vals, by="loanNum") # adding charge off values
+
+# Training loss model
+loss.mod <- lm(GrossChargeOffAmount~interestRate+unemploymentRate+hpiState+tedSpread+GrossApproval+TermInMonths+SBLR, data=loss_train)
+summary(loss.mod)
+
+# Testing loss model, computing MSE
+loss.pred <- predict(loss.mod, newdata=loss_valid)
+loss.pred
+loss.mse <- mean((loss_valid$GrossChargeOffAmount-loss.pred)^2)
+loss.mse
 
 ```
 
