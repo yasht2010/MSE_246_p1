@@ -348,17 +348,27 @@ log_reg_predict_values[pred_log_reg>0.5] <-1
 
 ```{r}
 
+
 # Set up loss training set
-loss_train <- filter(training_set, isDefault == 1)
+#loss_train <- filter(training_set, isDefault == 1)
+loss_train <- read.csv('training_set.csv')
 chg_vals <- select(df, GrossChargeOffAmount)
 chg_vals$loanNum <- c(1:nrow(df))
 loss_train <- left_join(loss_train, chg_vals, by="loanNum") # adding charge off values
-loss_train <- loss_train[!is.na(loss_train$GrossChargeOffAmount),]
+#loss_train <- loss_train[!is.na(loss_train$GrossChargeOffAmount),]
+
+# Quick visualization
+tr.sampl.rows <- sample(1:nrow(loss_train), 10000, replace=FALSE)
+tr.sampl <- loss_train[tr.sampl.rows,]
+par(mar=c(1,1,1,1))
+pairs(tr.sampl[,c(5,7:10,15,17,19,21,24)])
+
 
 # Set up loss validation set
-loss_valid <- filter(test_set, isDefault == 1)
+#loss_valid <- filter(test_set, isDefault == 1)
+loss_valid <- read.csv('validation_set.csv')
 loss_valid <- left_join(loss_valid, chg_vals, by="loanNum") # adding charge off values
-loss_valid <- loss_valid[!is.na(loss_valid$GrossChargeOffAmount),]
+#loss_valid <- loss_valid[!is.na(loss_valid$GrossChargeOffAmount),]
 
 # Training loss model
 loss.mod <- lm(GrossChargeOffAmount~interestRate+unemploymentRate+hpiState+tedSpread+GrossApproval+TermInMonths+SBLR, data=loss_train)
@@ -366,9 +376,32 @@ summary(loss.mod)
 
 # Testing loss model, computing MSE
 loss.pred <- predict(loss.mod, newdata=loss_valid)
-loss.pred <- loss.pred[!is.na(loss.pred)]
+#loss.pred <- loss.pred[!is.na(loss.pred)]
+
+rem.rows <- c(0)
+
+for (i in 1:nrow(loss_valid)) {
+  if (is.na(loss_valid$GrossChargeOffAmount[i]) | is.na(loss.pred[i])) {
+    if (rem.rows[length(rem.rows)]==0) {
+      rem.rows[length(rem.rows)] <- i
+    } else {
+      length(rem.rows) <- length(rem.rows)+1
+      rem.rows[length(rem.rows)] <- i
+    }
+  }
+}
+
+loss_valid <- loss_valid[-rem.rows,]
+loss.pred <- loss.pred[-rem.rows]
+
+
+nrow(loss_valid)
+length(loss.pred)
+
 loss.mse <- mean((loss_valid$GrossChargeOffAmount-loss.pred)^2)
 loss.mse
+
+
 
 ```
 
