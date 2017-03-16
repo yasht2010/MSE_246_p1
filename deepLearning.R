@@ -1,13 +1,17 @@
+install.packages("h2o")
+install.packages("zoo")
+install.packages("dplyr")
+
 library(h2o)
 library(zoo)
 library(dplyr)
 
 rm(list = ls())
-localH2O <- h2o.init(ip = "localhost", port = 54321, startH2O = TRUE, nthreads = -1)
+localH2O <- h2o.init()
 
-df <- read.csv("SBA_cleaned_data.csv")
-df <- df[,-c(1)]
-df <- subset(df, select = -c(LoanStatus,ChargeOffDate,GrossChargeOffAmount,dayselapsed))
+df <- read.csv("big_data_Matrix.csv")
+colnames(df)
+df <- subset(df, select = -c(X,loanNum,start,stop,ApprovalDate))
 
 # Creation of Train, Validation and Test set for Time Series Sampling
 df.train.ts <- filter(df,ApprovalFiscalYear <= 2002)
@@ -30,14 +34,14 @@ train_h2o[,y] <- as.factor(train_h2o[,y])
 valid_h2o[,y] <- as.factor(valid_h2o[,y])
 test_h2o[,y] <- as.factor(test_h2o[,y])
 
-
+set.seed(1)
 model <- h2o.deeplearning(x = x,  # column names for predictors
                           y = y,   # column name for label
                           training_frame = train_h2o, # train data in H2O format
                           validation_frame = valid_h2o, # test data in H2O format
                           distribution = "multinomial", # used for multi-classification 
                           activation = "RectifierWithDropout", # activation function 
-                          hidden = c(1), # number of nodes in hidden layers (3 layers with 200 nodes each)
+                          hidden = c(200), # number of nodes in hidden layers (3 layers with 200 nodes each)
                           input_dropout_ratio = 0.2, # A fraction of the features for each training row to omit from training in order to improve generalization (dimension sampling).
                           l1 = 1e-5, # l1 regularization
                           epochs = 10) # number of iterations
@@ -66,5 +70,9 @@ head(y_hat)
 # calculating classification error
 err = 1 - mean(y_hat == df.test.ts$isDefault)
 err
+xtab <- table(y_hat,df.test.ts$isDefault)
+xtab
+
+save.image("~/Dropbox/MS&E 246/model200x1.RData")
 
 h2o.shutdown(prompt = FALSE)
