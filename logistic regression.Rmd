@@ -25,7 +25,7 @@ test500_set = read.csv("test500_full.csv")
 sum(test_set$isDefault)
 sum(test_set$isDefault)/length(unique(test_set$loanNum))
 sum(test500_set$isDefault)/length(unique(test500_set$loanNum))
-log_reg=glm(isDefault ~ GrossApproval+hpiState+sandp500+unemploymentRate+interestRate+sandp500,family=binomial,data=training_set)
+log_reg=glm(isDefault ~ GrossApproval+hpiState+sandp500+unemploymentRate+interestRate,family=binomial,data=training_set)
 
 summary(log_reg)
 #predict of test_set w/o splitting time periods
@@ -35,36 +35,65 @@ log_reg_predict_values = c(rep(0,nrow(test_set)))
 log_reg_predict_values[pred_log_reg>0.07] <-1 
 table(log_reg_predict_values, test_set$isDefault)
 
-#Splitting time periods
-names(test_set)
-test_set_time_eval=filter(test_set,ApprovalFiscalYear==2008,TermInMonths>=60, start == 2008)
-pred_log_reg_2008=predict(log_reg,test_set_time_eval,type="response")
-loans_2008 = test_set_time_eval$loanNum
-loans_2008 = as.numeric(loans_2008)
+# pred_log_reg - Conditional Prob of Default
+# test_set = validation set
 
-lr_pred_val_2008 = c(rep(0, nrow(test_set_time_eval)))
-lr_pred_val_2008[pred_log_reg_2008>0.0079] = 1
-table(lr_pred_val_2008, test_set_time_eval$isDefault)
+loan_indices <- as.data.frame(unique(test_set$loanNum))
+loan_indices$start <- 1
+loan_indices$stop <- 1
+colnames(loan_indices) <- c("loan_no","start","stop")
+l = 1
+counter = 1
 
-test_set_time_eval2 = filter(test_set,ApprovalFiscalYear==2008,TermInMonths>=60, start == 2009)
-test_set_time_eval2 = test_set_time_eval2[(test_set_time_eval2$loanNum %in% loans_2008),]
-pred_log_reg_2009=predict(log_reg,test_set_time_eval2,type="response")
-pred_log_reg_2year = pred_log_reg_2009*pred_log_reg_2008
-pred_log_reg_2year
+# find start and stop for each loan
+for(i in 1:nrow(test_set)){
+  if(test_set$endIndicator[i]==1){
+    loan_indices$stop[l]=i
+    l=l+1
+    if(l<=nrow(loan_indices)){
+    loan_indices$start[l]=i+1
+    }
+  }
+}
 
-nrow(test_set_time_eval2)
-nrow(test_set_time_eval)
+pred_test <- rep(0,length(pred_log_reg))
 
-log_reg_predict_values_2year = c(rep(0,nrow(test_set_time_eval2)))
-log_reg_predict_values_2year[pred_log_reg_2year>5e-03] <-1 
-table(log_reg_predict_values_2year, test_set_time_eval2$isDefault)
+for(i in 1:nrow(loan_indices))
+{
+  a = loan_indices$start[i]
+  b = loan_indices$stop[i]
+  for(j in a:b){
+    print("a")
+    if(j==a){
+      pred_test[a]=pred_log_reg[a]
+    }
+    else{
+      for(k in a:j){
+        counter = counter*(1-pred_log_reg[k])
+      }
+       pred_test[j]=1-counter
+    }
+    counter = 1
+  }
+}
 
-err = 1 - mean(log_reg_predict_values_2year == test_set_time_eval2$isDefault)
-err
+pred_test_val <- rep(0,length(pred_log_reg))
+pred_test_val[pred_test>0.08] <-1 
+table(pred_test_val,test_set$isDefault)
+
+# for loop over start and stop for each loan
+
+## if i = 1 => Prob of default is just the cond. prob
+## if i>1
+### for loop from 1 to i-1
+#### multiply with survival
+### multiply with default in i
+
+
 #ROC Curve
 library(ROCR)
 #does not work if no loans defaulted. Only works when there are two classes.
-pred1 = prediction(pred_log_reg_2year, test_set_time_eval2$isDefault)
+pred1 = prediction(pred_test, test_set$isDefault)
 perf1 = performance(pred1, "tpr", "fpr")
 plot(perf1)
 auc1 <- performance(pred1,measure = "auc")
