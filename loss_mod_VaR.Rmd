@@ -72,7 +72,7 @@ bag.mse
 
 
 # Training loss model -- random forests
-rf.tree <- randomForest(GrossChargeOffAmount~interestRate+unemploymentRate+hpiState+tedSpread+sandp500+TermInMonths, data=loss_train, mtry=3, ntree=30)
+rf.tree <- randomForest(GrossChargeOffAmount~interestRate+unemploymentRate+hpiState+tedSpread+sandp500+TermInMonths, data=loss_train, mtry=2, ntree=30)
 summary(bag.tree)
 
 rf.losspred <- predict(bag.tree, newdata=loss_valid, type="response")
@@ -94,6 +94,7 @@ spl.mse
 
 ```{r}
 library(PerformanceAnalytics)
+library(ggplot2)
 
 ## ONE YEAR LOSSES
 
@@ -151,10 +152,24 @@ for (i in 1:500) {
 }
 
 # Plot VaR & AVaR
-hist(loss.var95.1)
-hist(loss.var99.1)
-hist(loss.avar95.1)
-hist(loss.avar99.1)
+pl.var95.1 <- hist(loss.var95.1)
+pl.var99.1 <- hist(loss.var99.1)
+pl.avar95.1 <- hist(loss.avar95.1)
+pl.avar99.1 <- hist(loss.avar99.1)
+
+# Tranches
+lossvector.1 <- unlist(loss.marix.1)
+
+maxloss.1 <- max(lossvector.1)
+thresh5.1 <- 0.05*maxloss.1
+thresh15.1 <- 0.15*maxloss.1
+
+junior.tranche.1 <- ifelse(lossvector.1 > thresh5.1, min(c(100, (lossvector.1-thresh5.1)/thresh15.1)), 0)
+senior.tranche.1 <- ifelse(lossvector.1 > thresh15.1, (lossvector.1-thresh15.1)/maxloss.1, 0)
+
+junior.plot.1 <- plot(lossvector.1/maxloss.1, junior.tranche.1)
+senior.plot.1 <- plot(lossvector.1/maxloss.1, senior.tranche.1)
+
 
 ## FIVE YEAR LOSSES
 
@@ -207,11 +222,24 @@ for (i in 1:500) {
 }
 
 # Plot VaR & AVaR
-hist(loss.var95.5)
-hist(loss.var99.5)
-hist(loss.avar95.5)
-hist(loss.avar99.5)
+pl.var95.5 <- hist(loss.var95.5)
+pl.var99.5 <- hist(loss.var99.5)
+pl.avar95.5 <- hist(loss.avar95.5)
+pl.avar99.5 <- hist(loss.avar99.5)
 
+
+# Tranches
+lossvector.5 <- unlist(loss.marix.5)
+
+maxloss.5 <- max(lossvector.5)
+thresh5.5 <- 0.05*maxloss.5
+thresh15.5 <- 0.15*maxloss.5
+
+junior.tranche.5 <- ifelse(lossvector.5 > thresh5.5, min(c(100, (lossvector.5-thresh5.5)/thresh15.5)), 0)
+senior.tranche.5 <- ifelse(lossvector.5 > thresh15.5, (lossvector.5-thresh15.5)/maxloss.5, 0)
+
+junior.plot.5 <- plot(lossvector.5/maxloss.5, junior.tranche.5)
+senior.plot.5 <- plot(lossvector.5/maxloss.5, senior.tranche.5)
 ```
 
 
