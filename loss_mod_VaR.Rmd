@@ -1,0 +1,148 @@
+---
+title: "Loss Given Default/VaR"
+author: "Daniel Bereket"
+date: "3/15/2017"
+output: html_document
+---
+
+# Loss given default
+
+```{r}
+library(tree)
+
+# Set up loss training set
+loss_train <- read.csv('training_set 2.csv')
+chg_vals <- select(df, GrossChargeOffAmount)
+chg_vals$loanNum <- c(1:nrow(df))
+loss_train <- left_join(loss_train, chg_vals, by="loanNum") # adding charge off values
+
+
+# Set up loss validation set
+loss_valid <- read.csv('validation_set.csv')
+loss_valid <- left_join(loss_valid, chg_vals, by="loanNum") # adding charge off values
+#loss_valid <- loss_valid[!is.na(loss_valid$GrossChargeOffAmount),]
+
+# Training loss model -- decision tree
+
+
+
+
+
+```
+
+# VaR Calculation
+
+```{r}
+library(PerformanceAnalytics)
+
+## ONE YEAR LOSSES
+
+# TEMP: Sample default probabilities
+def.probs <- runif(500,0,1)
+
+# Monte Carlo values
+def.unif <- runif(500,0,1)
+
+# Matrix of default events
+test.def <- ifelse(def.unif<def.probs, 1, 0)
+
+# Test loss predictions
+test.loss <- predict(loss.mod, newdata=test500_set)
+
+# Losses
+test.prob.loss <- test.loss * test.def
+
+loss.matrix.1 <- matrix(nrow=500, ncol=500)
+loss.var95.1 <- rep(0,500)
+loss.avar95.1 <- rep(0,500)
+loss.var99.1 <- rep(0,500)
+loss.avar99.1 <- rep(0,500)
+
+# BOOTSTRAP
+for (i in 1:500) {
+  
+  for (j in 1:500) {
+    # Creating bootstrapped sample
+    curr.rows <- sample(c(1:500), replace=TRUE)
+    curr.vals <- test500_set[curr.rows,]
+    
+    # Getting losses
+    curr.prob.loss <- test.prob.loss[curr.rows,]
+    
+    # Calculating total loss, store it in matrix
+    total.loss <- sum(curr.prob.loss)
+    loss.matrix.1[i,j] <- total.loss
+  }
+  
+  # Calculate VaR for both confidence levels
+  curr.loss.sum <- loss.matrix.1[i,]
+  curr.var <- quantile(curr.loss.sum, probs = seq(0.95, 0.99))
+  
+  loss.var95.1[i] <- curr.var[1]
+  loss.var99.1[i] <- curr.var[2]
+  
+  # Calculate AVaR for both confidence levels
+  loss.avar95.1[i] <- ES(curr.loss.sum, p=0.95, method="historical", clean="none", portfolio_method="single")
+  
+  loss.avar99.1[i] <- ES(curr.loss.sum, p=0.99, method="historical", clean="none", portfolio_method="single")
+}
+
+
+## FIVE YEAR LOSSES
+
+# TEMP: Sample default probabilities
+def.probs <- runif(500,0,1)
+
+# Monte Carlo values
+def.unif <- runif(500,0,1)
+
+# Matrix of default events
+test.def <- ifelse(def.unif<def.probs, 1, 0)
+
+# Losses (using same loss given default predictions as before)
+test.prob.loss <- test.loss * test.def
+
+loss.matrix.5 <- matrix(nrow=500, ncol=500)
+loss.var95.5 <- rep(0,500)
+loss.avar95.5 <- rep(0,500)
+loss.var99.5 <- rep(0,500)
+loss.avar99.5 <- rep(0,500)
+
+
+# BOOTSTRAP
+for (i in 1:500) {
+  
+  for (j in 1:500) {
+    # Creating bootstrapped sample
+    curr.rows <- sample(c(1:500), replace=TRUE)
+    curr.vals <- test500_set[curr.rows,]
+    
+    # Getting losses
+    curr.prob.loss <- test.prob.loss[curr.rows,]
+    
+    # Calculating total loss, store it in matrix
+    total.loss <- sum(curr.prob.loss)
+    loss.matrix.5[i,j] <- total.loss
+  }
+  
+  # Calculate VaR for both confidence levels
+  curr.loss.sum <- loss.matrix.5[i,]
+  curr.var <- quantile(curr.loss.sum, probs = seq(0.95, 0.99))
+  
+  loss.var95.5[i] <- curr.var[1]
+  loss.var99.5[i] <- curr.var[2]
+  
+  # Calculate AVaR for both confidence levels
+  loss.avar95.5[i] <- ES(curr.loss.sum, p=0.95, method="historical", clean="none", portfolio_method="single")
+  
+  loss.avar99.5[i] <- ES(curr.loss.sum, p=0.99, method="historical", clean="none", portfolio_method="single")
+}
+
+
+
+```
+
+
+
+
+
