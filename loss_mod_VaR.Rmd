@@ -9,9 +9,14 @@ output: html_document
 
 ```{r}
 library(tree)
+library(randomForest)
+library(dplyr)
 
 # Set up loss training set
-loss_train <- read.csv('training_set 2.csv')
+loss_train <- read.csv('training_set.csv')
+loss_train <- loss_train[loss_train$isDefault==1,]
+
+df <- read.csv('SBA_cleaned_data.csv')
 chg_vals <- select(df, GrossChargeOffAmount)
 chg_vals$loanNum <- c(1:nrow(df))
 loss_train <- left_join(loss_train, chg_vals, by="loanNum") # adding charge off values
@@ -19,11 +24,35 @@ loss_train <- left_join(loss_train, chg_vals, by="loanNum") # adding charge off 
 
 # Set up loss validation set
 loss_valid <- read.csv('validation_set.csv')
+loss_valid <- loss_valid[loss_valid$isDefault==1,]
 loss_valid <- left_join(loss_valid, chg_vals, by="loanNum") # adding charge off values
-#loss_valid <- loss_valid[!is.na(loss_valid$GrossChargeOffAmount),]
 
-# Training loss model -- decision tree
+# Training loss model -- linear regression (threshold)
+loss.lm <- lm(GrossChargeOffAmount~interestRate+unemploymentRate+hpiState+tedSpread+sandp500+GrossApproval+TermInMonths+SBLR, data=loss_train)
+summary(loss.lm)
 
+lm.losspred <- predict(lm, newdata=loss_valid)
+lm.mse <- mean((lm.losspred-loss_valid$GrossChargeOffAmount)^2)
+lm.mse
+
+# Training loss model -- bagging
+bag.tree <- randomForest(GrossChargeOffAmount~interestRate+unemploymentRate+hpiState+tedSpread+sandp500+GrossApproval+TermInMonths+SBLR, data=loss_train, mtry=8, ntree=30)
+summary(bag.tree)
+
+bag.losspred <- predict(bag.tree, newdata=loss_valid, type="response")
+bag.mse <- mean((bag.losspred-loss_valid$GrossChargeOffAmount)^2)
+bag.mse
+
+
+# Training loss model -- random forests
+rf.tree <- randomForest(GrossChargeOffAmount~interestRate+unemploymentRate+hpiState+tedSpread+sandp500+GrossApproval+TermInMonths+SBLR, data=loss_train, mtry=3, ntree=30)
+summary(bag.tree)
+
+rf.losspred <- predict(bag.tree, newdata=loss_valid, type="response")
+rf.mse <- mean((rf.losspred-loss_valid$GrossChargeOffAmount)^2)
+rf.mse
+
+# Training loss model -- regression spline
 
 
 
