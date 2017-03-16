@@ -24,7 +24,6 @@ loss_train <- loss_train[!is.na(loss_train$hpiState),]
 loss_train <- loss_train[!is.na(loss_train$tedSpread),]
 loss_train <- loss_train[!is.na(loss_train$sandp500),]
 loss_train <- loss_train[!is.na(loss_train$TermInMonths),]
-loss_train <- loss_train[!is.na(loss_train$SBLR),]
 
 df <- read.csv('SBA_cleaned_data.csv')
 chg_vals <- select(df, GrossChargeOffAmount)
@@ -44,7 +43,6 @@ loss_valid <- loss_valid[!is.na(loss_valid$hpiState),]
 loss_valid <- loss_valid[!is.na(loss_valid$tedSpread),]
 loss_valid <- loss_valid[!is.na(loss_valid$sandp500),]
 loss_valid <- loss_valid[!is.na(loss_valid$TermInMonths),]
-loss_valid <- loss_valid[!is.na(loss_valid$SBLR),]
 
 # Update training & validation set to have loss ratio
 loss_train$LossRatio <- loss_train$GrossChargeOffAmount / loss_train$GrossApproval
@@ -55,15 +53,19 @@ loss_valid$RatioLogit <- loss_valid$LossRatio / (1 + loss_valid$LossRatio)
 
 
 # Training loss model -- linear regression (threshold)
-loss.lm <- lm(LossRatio~interestRate+unemploymentRate+hpiState+tedSpread+sandp500+TermInMonths, data=loss_train,na.action=na.exclude)
+loss.lm <- lm(LossRatio~interestRate+unemploymentRate+log(hpiState)+tedSpread+sandp500+TermInMonths, data=loss_train,na.action=na.exclude)
 summary(loss.lm)
 
 lm.losspred <- predict(loss.lm, newdata=loss_valid)
 lm.mse <- mean((lm.losspred-loss_valid$LossRatio)^2)
 lm.mse
 
+# Creating log hpi state column
+loss_train$loghpi <- log(loss_train$hpiState)
+loss_valid$loghpi <- log(loss_valid$hpiState)
+
 # Training loss model -- bagging
-bag.tree <- randomForest(LossRatio~interestRate+unemploymentRate+hpiState+tedSpread+sandp500+TermInMonths, data=loss_train, mtry=8, ntree=30)
+bag.tree <- randomForest(LossRatio~interestRate+unemploymentRate+loghpi+tedSpread+sandp500+TermInMonths, data=loss_train, mtry=6, ntree=90)
 summary(bag.tree)
 
 bag.losspred <- predict(bag.tree, newdata=loss_valid, type="response")
@@ -72,7 +74,7 @@ bag.mse
 
 
 # Training loss model -- random forests
-rf.tree <- randomForest(GrossChargeOffAmount~interestRate+unemploymentRate+hpiState+tedSpread+sandp500+TermInMonths, data=loss_train, mtry=2, ntree=30)
+rf.tree <- randomForest(GrossChargeOffAmount~interestRate+unemploymentRate+loghpi+tedSpread+sandp500+TermInMonths, data=loss_train, mtry=2, ntree=90)
 summary(bag.tree)
 
 rf.losspred <- predict(bag.tree, newdata=loss_valid, type="response")
@@ -80,7 +82,7 @@ rf.mse <- mean((rf.losspred-loss_valid$LossRatio)^2)
 rf.mse
 
 # Training loss model -- regression spline
-loss.spl <- lm(LossRatio~bs(interestRate,df=3)+bs(unemploymentRate,df=3)+bs(hpiState,df=3)+bs(tedSpread,df=3)+bs(sandp500,df=3)+bs(TermInMonths,df=3),data=loss_train)
+loss.spl <- lm(LossRatio~bs(interestRate,df=3)+bs(unemploymentRate,df=3)+bs(log(hpiState),df=3)+bs(tedSpread,df=3)+bs(sandp500,df=3)+bs(TermInMonths,df=3),data=loss_train)
 
 spl.losspred <- predict(loss.spl,newdata=loss_valid)
 
@@ -94,7 +96,6 @@ spl.mse
 
 ```{r}
 library(PerformanceAnalytics)
-library(ggplot2)
 
 ## ONE YEAR LOSSES
 
@@ -152,10 +153,17 @@ for (i in 1:500) {
 }
 
 # Plot VaR & AVaR
-pl.var95.1 <- hist(loss.var95.1)
-pl.var99.1 <- hist(loss.var99.1)
-pl.avar95.1 <- hist(loss.avar95.1)
-pl.avar99.1 <- hist(loss.avar99.1)
+pl.var95.1 <- hist(loss.var95.1, main = "VaR Frequency: 1-Year Loss", xlab = "VaR (95% level)")
+abline(v=quantile(loss.var95.1,probs=seq(0.95)),col="red")
+
+pl.var99.1 <- hist(loss.var99.1, main = "VaR Frequency: 1-Year Loss", xlab = "VaR (99% level)")
+abline(v=quantile(loss.var99.1,probs=seq(0.99)),col="red")
+
+pl.avar95.1 <- hist(loss.avar95.1, main = "AVaR Frequency: 1-Year Loss", xlab = "AVaR (95% level)")
+abline(v=quantile(loss.avar95.1,probs=seq(0.95)),col="red")
+
+pl.avar99.1 <- hist(loss.avar99.1, main = "AVaR Frequency: 1-Year Loss", xlab = "AVaR (99% level)")
+abline(v=quantile(loss.avar99.1,probs=seq(0.99)),col="red")
 
 # Tranches
 lossvector.1 <- unlist(loss.marix.1)
@@ -222,11 +230,17 @@ for (i in 1:500) {
 }
 
 # Plot VaR & AVaR
-pl.var95.5 <- hist(loss.var95.5)
-pl.var99.5 <- hist(loss.var99.5)
-pl.avar95.5 <- hist(loss.avar95.5)
-pl.avar99.5 <- hist(loss.avar99.5)
+pl.var95.5 <- hist(loss.var95.5, main = "VaR Frequency: 5-Year Loss", xlab = "VaR (95% level)")
+abline(v=quantile(loss.var95.5,probs=seq(0.95)),col="red")
 
+pl.var99.5 <- hist(loss.var99.5, main = "VaR Frequency: 5-Year Loss", xlab = "VaR (99% level)")
+abline(v=quantile(loss.var99.5,probs=seq(0.99)),col="red")
+
+pl.avar95.5 <- hist(loss.avar95.5, main = "AVaR Frequency: 5-Year Loss", xlab = "AVaR (95% level)")
+abline(v=quantile(loss.avar95.5,probs=seq(0.95)),col="red")
+
+pl.avar99.5 <- hist(loss.avar99.5, main = "AVaR Frequency: 5-Year Loss", xlab = "AVaR (99% level)")
+abline(v=quantile(loss.avar99.5,probs=seq(0.99)),col="red")
 
 # Tranches
 lossvector.5 <- unlist(loss.marix.5)
@@ -241,8 +255,4 @@ senior.tranche.5 <- ifelse(lossvector.5 > thresh15.5, (lossvector.5-thresh15.5)/
 junior.plot.5 <- plot(lossvector.5/maxloss.5, junior.tranche.5)
 senior.plot.5 <- plot(lossvector.5/maxloss.5, senior.tranche.5)
 ```
-
-
-
-
 
