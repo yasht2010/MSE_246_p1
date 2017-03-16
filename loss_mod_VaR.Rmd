@@ -10,11 +10,21 @@ output: html_document
 ```{r}
 library(tree)
 library(randomForest)
+library(splines)
 library(dplyr)
 
 # Set up loss training set
 loss_train <- read.csv('training_set.csv')
 loss_train <- loss_train[loss_train$isDefault==1,]
+
+# Cleaning NA values for training set
+loss_train <- loss_train[!is.na(loss_train$interestRate),]
+loss_train <- loss_train[!is.na(loss_train$unemploymentRate),]
+loss_train <- loss_train[!is.na(loss_train$hpiState),]
+loss_train <- loss_train[!is.na(loss_train$tedSpread),]
+loss_train <- loss_train[!is.na(loss_train$sandp500),]
+loss_train <- loss_train[!is.na(loss_train$TermInMonths),]
+loss_train <- loss_train[!is.na(loss_train$SBLR),]
 
 df <- read.csv('SBA_cleaned_data.csv')
 chg_vals <- select(df, GrossChargeOffAmount)
@@ -27,34 +37,55 @@ loss_valid <- read.csv('validation_set.csv')
 loss_valid <- loss_valid[loss_valid$isDefault==1,]
 loss_valid <- left_join(loss_valid, chg_vals, by="loanNum") # adding charge off values
 
+# Cleaning NA values for validation set
+loss_valid <- loss_valid[!is.na(loss_valid$interestRate),]
+loss_valid <- loss_valid[!is.na(loss_valid$unemploymentRate),]
+loss_valid <- loss_valid[!is.na(loss_valid$hpiState),]
+loss_valid <- loss_valid[!is.na(loss_valid$tedSpread),]
+loss_valid <- loss_valid[!is.na(loss_valid$sandp500),]
+loss_valid <- loss_valid[!is.na(loss_valid$TermInMonths),]
+loss_valid <- loss_valid[!is.na(loss_valid$SBLR),]
+
+# Update training & validation set to have loss ratio
+loss_train$LossRatio <- loss_train$GrossChargeOffAmount / loss_train$GrossApproval
+loss_train$RatioLogit <- loss_train$LossRatio / (1 + loss_train$LossRatio)
+
+loss_valid$LossRatio <- loss_valid$GrossChargeOffAmount / loss_valid$GrossApproval
+loss_valid$RatioLogit <- loss_valid$LossRatio / (1 + loss_valid$LossRatio)
+
+
 # Training loss model -- linear regression (threshold)
-loss.lm <- lm(GrossChargeOffAmount~interestRate+unemploymentRate+hpiState+tedSpread+sandp500+GrossApproval+TermInMonths+SBLR, data=loss_train)
+loss.lm <- lm(LossRatio~interestRate+unemploymentRate+hpiState+tedSpread+sandp500+TermInMonths, data=loss_train,na.action=na.exclude)
 summary(loss.lm)
 
-lm.losspred <- predict(lm, newdata=loss_valid)
-lm.mse <- mean((lm.losspred-loss_valid$GrossChargeOffAmount)^2)
+lm.losspred <- predict(loss.lm, newdata=loss_valid)
+lm.mse <- mean((lm.losspred-loss_valid$LossRatio)^2)
 lm.mse
 
 # Training loss model -- bagging
-bag.tree <- randomForest(GrossChargeOffAmount~interestRate+unemploymentRate+hpiState+tedSpread+sandp500+GrossApproval+TermInMonths+SBLR, data=loss_train, mtry=8, ntree=30)
+bag.tree <- randomForest(LossRatio~interestRate+unemploymentRate+hpiState+tedSpread+sandp500+TermInMonths, data=loss_train, mtry=8, ntree=30)
 summary(bag.tree)
 
 bag.losspred <- predict(bag.tree, newdata=loss_valid, type="response")
-bag.mse <- mean((bag.losspred-loss_valid$GrossChargeOffAmount)^2)
+bag.mse <- mean((bag.losspred-loss_valid$LossRatio)^2)
 bag.mse
 
 
 # Training loss model -- random forests
-rf.tree <- randomForest(GrossChargeOffAmount~interestRate+unemploymentRate+hpiState+tedSpread+sandp500+GrossApproval+TermInMonths+SBLR, data=loss_train, mtry=3, ntree=30)
+rf.tree <- randomForest(GrossChargeOffAmount~interestRate+unemploymentRate+hpiState+tedSpread+sandp500+TermInMonths, data=loss_train, mtry=3, ntree=30)
 summary(bag.tree)
 
 rf.losspred <- predict(bag.tree, newdata=loss_valid, type="response")
-rf.mse <- mean((rf.losspred-loss_valid$GrossChargeOffAmount)^2)
+rf.mse <- mean((rf.losspred-loss_valid$LossRatio)^2)
 rf.mse
 
 # Training loss model -- regression spline
+loss.spl <- lm(LossRatio~bs(interestRate,df=3)+bs(unemploymentRate,df=3)+bs(hpiState,df=3)+bs(tedSpread,df=3)+bs(sandp500,df=3)+bs(TermInMonths,df=3),data=loss_train)
 
+spl.losspred <- predict(loss.spl,newdata=loss_valid)
 
+spl.mse <- mean((spl.losspred-loss_valid$LossRatio)^2)
+spl.mse
 
 
 ```
@@ -66,6 +97,9 @@ library(PerformanceAnalytics)
 
 ## ONE YEAR LOSSES
 
+# Reading in test set
+test500_set <- read.csv('test500_set.csv')
+
 # TEMP: Sample default probabilities
 def.probs <- runif(500,0,1)
 
@@ -75,11 +109,11 @@ def.unif <- runif(500,0,1)
 # Matrix of default events
 test.def <- ifelse(def.unif<def.probs, 1, 0)
 
-# Test loss predictions
-test.loss <- predict(loss.mod, newdata=test500_set)
+# Test loss predictions -- using random forests
+test.loss <- predict(rf.tree, newdata=test500_set)
 
 # Losses
-test.prob.loss <- test.loss * test.def
+test.prob.loss <- test.loss * test500_set$GrossApproval * test.def
 
 loss.matrix.1 <- matrix(nrow=500, ncol=500)
 loss.var95.1 <- rep(0,500)
@@ -116,6 +150,11 @@ for (i in 1:500) {
   loss.avar99.1[i] <- ES(curr.loss.sum, p=0.99, method="historical", clean="none", portfolio_method="single")
 }
 
+# Plot VaR & AVaR
+hist(loss.var95.1)
+hist(loss.var99.1)
+hist(loss.avar95.1)
+hist(loss.avar99.1)
 
 ## FIVE YEAR LOSSES
 
@@ -167,7 +206,11 @@ for (i in 1:500) {
   loss.avar99.5[i] <- ES(curr.loss.sum, p=0.99, method="historical", clean="none", portfolio_method="single")
 }
 
-
+# Plot VaR & AVaR
+hist(loss.var95.5)
+hist(loss.var99.5)
+hist(loss.avar95.5)
+hist(loss.avar99.5)
 
 ```
 
