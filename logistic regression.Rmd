@@ -1,0 +1,73 @@
+---
+title: "logistic regression"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(ROCR)
+library(glmnet)
+
+## LOGISTIC REGRESSION
+## LOGISTIC REGRESSION
+
+# Constructing Model
+set.seed(2)
+training_set = read.csv("training_set.csv")
+sum(training_set$isDefault)
+sum(training_set$isDefault)/length(unique(training_set$loanNum))
+test_set = read.csv("validation_set.csv")
+test500_set = read.csv("test500_full.csv")
+sum(test_set$isDefault)
+sum(test_set$isDefault)/length(unique(test_set$loanNum))
+sum(test500_set$isDefault)/length(unique(test500_set$loanNum))
+log_reg=glm(isDefault ~ GrossApproval+hpiState+sandp500+unemploymentRate+interestRate+sandp500,family=binomial,data=training_set)
+
+summary(log_reg)
+#predict of test_set w/o splitting time periods
+pred_log_reg=predict(log_reg,test_set,type="response")
+pred_log_reg
+log_reg_predict_values = c(rep(0,nrow(test_set)))
+log_reg_predict_values[pred_log_reg>0.07] <-1 
+table(log_reg_predict_values, test_set$isDefault)
+
+#Splitting time periods
+names(test_set)
+test_set_time_eval=filter(test_set,ApprovalFiscalYear==2008,TermInMonths>=60, start == 2008)
+pred_log_reg_2008=predict(log_reg,test_set_time_eval,type="response")
+loans_2008 = test_set_time_eval$loanNum
+loans_2008 = as.numeric(loans_2008)
+
+lr_pred_val_2008 = c(rep(0, nrow(test_set_time_eval)))
+lr_pred_val_2008[pred_log_reg_2008>0.0079] = 1
+table(lr_pred_val_2008, test_set_time_eval$isDefault)
+
+test_set_time_eval2 = filter(test_set,ApprovalFiscalYear==2008,TermInMonths>=60, start == 2009)
+test_set_time_eval2 = test_set_time_eval2[(test_set_time_eval2$loanNum %in% loans_2008),]
+pred_log_reg_2009=predict(log_reg,test_set_time_eval2,type="response")
+pred_log_reg_2year = pred_log_reg_2009*pred_log_reg_2008
+pred_log_reg_2year
+
+nrow(test_set_time_eval2)
+nrow(test_set_time_eval)
+
+log_reg_predict_values_2year = c(rep(0,nrow(test_set_time_eval2)))
+log_reg_predict_values_2year[pred_log_reg_2year>5e-03] <-1 
+table(log_reg_predict_values_2year, test_set_time_eval2$isDefault)
+
+err = 1 - mean(log_reg_predict_values_2year == test_set_time_eval2$isDefault)
+err
+#ROC Curve
+library(ROCR)
+#does not work if no loans defaulted. Only works when there are two classes.
+pred1 = prediction(pred_log_reg_2year, test_set_time_eval2$isDefault)
+perf1 = performance(pred1, "tpr", "fpr")
+plot(perf1)
+auc1 <- performance(pred1,measure = "auc")
+auc1 <- auc1@y.values[[1]]
+auc1
+```
