@@ -208,8 +208,8 @@ thresh15.1 <- 0.15*maxloss
 junior.tranche.1 <- ifelse(lossvector.1 > thresh5.1, min(c(100, (lossvector.1-thresh5.1)/thresh15.1)), 0)
 senior.tranche.1 <- ifelse(lossvector.1 > thresh15.1, (lossvector.1-thresh15.1)/maxloss, 0)
 
-junior.plot.1 <- plot(lossvector.1/maxloss, junior.tranche.1)
-senior.plot.1 <- plot(lossvector.1/maxloss, senior.tranche.1)
+junior.plot.1 <- hist(junior.tranche.1)
+senior.plot.1 <- hist(senior.tranche.1)
 
 
 ## FIVE YEAR LOSSES
@@ -272,7 +272,7 @@ thresh15.5 <- 0.15*maxloss
 junior.tranche.5 <- ifelse(lossvector.5 > thresh5.5, min(c(100, (lossvector.5-thresh5.5)/thresh15.5)), 0)
 senior.tranche.5 <- ifelse(lossvector.5 > thresh15.5, (lossvector.5-thresh15.5)/maxloss, 0)
 
-junior.plot.5 <- plot(lossvector.5/maxloss, junior.tranche.5)
-senior.plot.5 <- plot(lossvector.5/maxloss, senior.tranche.5)
+junior.plot.5 <- hist(junior.tranche.5)
+senior.plot.5 <- hist(senior.tranche.5)
 ```
 
