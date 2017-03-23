@@ -12,6 +12,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 finalMatrix <- read.csv("big_data_Matrix.csv")
+df <- read.csv("SBA_loan_data_new.csv")
+
 ```
 
 
@@ -66,11 +68,12 @@ matrix_test2=matrix(0,nrow=0,ncol=24)
   
   colnames(matrix_test)=x
   
+  df_new=df[loans_sampled_test,]
+  
   df_const2 <- as.matrix(subset(df_new,select = c(BorrState,CDC_State,ThirdPartyDollars,GrossApproval,
                                              ApprovalDate,ApprovalFiscalYear,DeliveryMethod,
                                              TermInMonths,BusinessType,NotSameState,SBLR,Naics2digits,isDefault)))
   
-  df_new=df[loans_sampled_test,]
   
   
   for (i in 1:nrow(df_new)) {

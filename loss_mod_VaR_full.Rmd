@@ -123,10 +123,9 @@ spl.mse
 test500_set <- read.csv('test500_full.csv')
 
 # Reading probabilities
-def.probs <- read.csv("prob.csv") # --> generate random probabilities to make sure procedure works
+def.probs <- read.csv("prob.csv") 
 names(def.probs)[2] <- "loanNum"
 def.probs <- select(def.probs, loanNum, Prob1yr, Prob5yr)
-
 
 # Join tables
 names(test500_set)[2] <- "loanNum"
@@ -138,16 +137,15 @@ test500_set <- left_join(test500_set, def.probs, by="loanNum")
 test500_set$loghpi <- log(test500_set$hpiState)
 test500_set$loggross <- log(test500_set$GrossApproval)
 
-
-# Test loss predictions -- using random forests
-test.loss <- predict(bag.tree, newdata=test500_set, type="response")
-
-
 ## ONE YEAR TEST DATASET
 
 test500.1 <- test500_set[test500_set$ApprovalFiscalYear==test500_set$start,]
 test500.1 <- left_join(test500.1, chg_vals, by="loanNum")
 
+# Filtering probabilites to those for one year
+def.probs.1 <- def.probs[!is.na(test500.1$interestRate),]
+def.probs.1 <- def.probs.1[!is.na(test500.1$unemploymentRate),]
+def.probs.1 <- def.probs.1[!is.na(test500.1$hpiState),]
 
 # Cleaning NA values for 1-year test set
 test500.1 <- test500.1[!is.na(test500.1$interestRate),]
@@ -157,6 +155,8 @@ test500.1 <- test500.1[!is.na(test500.1$tedSpread),]
 test500.1 <- test500.1[!is.na(test500.1$sandp500),]
 test500.1 <- test500.1[!is.na(test500.1$TermInMonths),]
 
+# Loss predictions
+test.loss.1 <- predict(bag.tree, newdata=test500.1, type="response")
 
 ## FIVE YEAR TEST DATASET
 
@@ -164,24 +164,27 @@ test500.1 <- test500.1[!is.na(test500.1$TermInMonths),]
 test500.5 <- test500_set[test500_set$start==test500_set$ApprovalFiscalYear,]
 
 test.def <- test500_set[test500_set$isDefault==1,]
+test.def <- test.def[test.def$stop<=test.def$ApprovalFiscalYear+5,]
 
-# Cleaning NA values for 1-year test set
-test500_set <- test500.5[!is.na(test500.5$interestRate),]
-test500_set <- test500.5[!is.na(test500.5$unemploymentRate),]
-test500_set <- test500.5[!is.na(test500.5$hpiState),]
-test500_set <- test500.5[!is.na(test500.5$tedSpread),]
-test500_set <- test500.5[!is.na(test500.5$sandp500),]
-test500_set <- test500.5[!is.na(test500.5$TermInMonths),]
+# Cleaning NA values for 5-year test set
+test500.5 <- test500.5[!is.na(test500.5$interestRate),]
+test500.5 <- test500.5[!is.na(test500.5$unemploymentRate),]
+test500.5 <- test500.5[!is.na(test500.5$hpiState),]
+test500.5 <- test500.5[!is.na(test500.5$tedSpread),]
+test500.5 <- test500.5[!is.na(test500.5$sandp500),]
+test500.5 <- test500.5[!is.na(test500.5$TermInMonths),]
 
 # Setting correct default events for 5-year horizon
 for (i in 1:nrow(test.def)) {
-  val <- test.def$loanNum1[i]
-  test500.5[test500.5$loanNum1==val,24] <- 1
+  val <- test.def$loanNum[i]
+  test500.5[test500.5$loanNum==val,24] <- 1
+  test500.5
 }
 
 test500.5 <- left_join(test500.5, chg_vals, by="loanNum")
 
-
+# Loss predictions
+test.loss.5 <- predict(bag.tree, newdata=test500.5, type="response")
 ```
 
 
@@ -205,11 +208,11 @@ set.seed(1)
 for (i in 1:10000) {
   r.prob <- runif(1,0,1)
   
-  def.events <- rep(0, nrow(def.probs))
-  def.events <- ifelse(def.probs$Prob1yr<=r.prob,1,0)
+  def.events <- rep(0, nrow(def.probs.1))
+  def.events <- ifelse(def.probs.1$Prob1yr<=r.prob,1,0)
   
   
-  def.loss <- test.loss * test500.1$GrossApproval * def.events
+  def.loss <- test.loss.1 * test500.1$GrossApproval * def.events
   
   def.total.loss <- sum(def.loss)
   firstloss.1[i] <- def.total.loss
@@ -274,7 +277,7 @@ for (i in 1:10000) {
   r.prob <- runif(1,0,1)
   
   def.events <- ifelse(def.probs$Prob5yr<=r.prob,1,0)
-  def.loss <- test.loss * test500.5$GrossApproval * def.events
+  def.loss <- test.loss.5 * test500.5$GrossApproval * def.events
   
   def.total.loss <- sum(def.loss)
   firstloss.5[i] <- def.total.loss

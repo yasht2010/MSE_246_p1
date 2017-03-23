@@ -7,6 +7,8 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+Read the training, validation and test data via this code
+
 ```{r}
 library(dplyr)
 library(ROCR)
@@ -16,29 +18,87 @@ library(glmnet)
 ## LOGISTIC REGRESSION
 
 # Constructing Model
-set.seed(2)
+set.seed(1)
 training_set = read.csv("training_set.csv")
-sum(training_set$isDefault)
-sum(training_set$isDefault)/length(unique(training_set$loanNum))
-test_set = read.csv("validation_set.csv")
+valid_set = read.csv("validation_set.csv")
 test500_set = read.csv("test500_full.csv")
-sum(test_set$isDefault)
-sum(test_set$isDefault)/length(unique(test_set$loanNum))
-sum(test500_set$isDefault)/length(unique(test500_set$loanNum))
-log_reg=glm(isDefault ~ GrossApproval+hpiState+sandp500+unemploymentRate+interestRate,family=binomial,data=training_set)
+test_set = read.csv("test500_set.csv")
+
+training_set$Naics2digits <- as.factor(training_set$Naics2digits)
+valid_set$Naics2digits <- as.factor(valid_set$Naics2digits)
+test_set$Naics2digits <- as.factor(test_set$Naics2digits)
+
+```
+
+
+```{r}
+# Lasso
+
+lasso_training = training_set
+
+lasso_training[is.na(lasso_training)] <- 0
+
+training_set$Naics2digits = as.factor(training_set$Naics2digits)
+x.lasso = model.matrix(training_set$isDefault~log(GrossApproval)+hpiState+log(ThirdPartyDollars)+
+                         unemploymentRate+interestRate+sandp500+tedSpread+
+                         NotSameState+BusinessType+DeliveryMethod+
+                         TermInMonths+ApprovalFiscalYear+BorrState+
+                         CDC_State+Naics2digits+gdpIndustry, data = training_set)[,-1]
+lasso_training = filter(lasso_training, !is.na(unemploymentRate))
+lasso.mod = glmnet(x.lasso, as.factor(lasso_training$isDefault), alpha = 1,family = "binomial")
+cv.out = cv.glmnet(x.lasso, lasso_training$isDefault, alpha = 1,family = "binomial")
+plot(cv.out)
+cv.out
+plot(lasso.mod,xvar = "lambda")
+# interestRate, ApprovalFiscalYear
+predict(cv.out, s = cv.out$lambda.1se, type = "coefficients")
+predict(cv.out, s = cv.out$lambda.min, type = "coefficients")
+
+# Elastic Net
+
+# Variable Importance Plot
+
+test_filter <- filter(test_set,BorrState != "VI")
+test_filter <- droplevels(test_filter)
+test_filter$isDefault <- as.factor(test_filter$isDefault)
+
+library(randomForest)
+rf.test =randomForest(isDefault???GrossApproval+hpiState+ThirdPartyDollars+
+                         unemploymentRate+interestRate+sandp500+tedSpread+
+                         NotSameState+BusinessType+DeliveryMethod+
+                         TermInMonths+ApprovalFiscalYear+BorrState+
+                         CDC_State+Naics2digits+gdpIndustry
+                      ,data=test_filter,mtry = 4, importance = TRUE)
+importance(rf.test)
+levels(training_set$BorrState)
+varImpPlot(rf.test,type=2)
+
+```
+
+GrossApproval+hpiState+unemploymentRate+interestRate+
+                            sandp500+NotSameState+SBLR+
+                            BusinessType+DeliveryMethod+
+                            TermInMonths+ApprovalFiscalYear+
+                            BorrState+++Naics2digits+gdpIndustry
+
+```{r}
+# Model Logistic with correct variables and time varying model
+log_reg=glm(isDefault ~ interestRate+ApprovalFiscalYear+gdpIndustry+
+              log(GrossApproval)+hpiState+unemploymentRate+
+              sandp500+NotSameState+Naics2digits
+            ,family="binomial",data=training_set)
 
 summary(log_reg)
-#predict of test_set w/o splitting time periods
-pred_log_reg=predict(log_reg,test_set,type="response")
-pred_log_reg
-log_reg_predict_values = c(rep(0,nrow(test_set)))
+#predict of valid_set w/o splitting time periods
+pred_log_reg=predict(log_reg,valid_set,type="response")
+log_reg_predict_values = c(rep(0,nrow(valid_set)))
 log_reg_predict_values[pred_log_reg>0.07] <-1 
-table(log_reg_predict_values, test_set$isDefault)
+table(log_reg_predict_values, valid_set$isDefault)
 
 # pred_log_reg - Conditional Prob of Default
-# test_set = validation set
+# valid_set = validation set
 
-loan_indices <- as.data.frame(unique(test_set$loanNum))
+loan_indices <- as.data.frame(unique(valid_set$loanNum))
 loan_indices$start <- 1
 loan_indices$stop <- 1
 colnames(loan_indices) <- c("loan_no","start","stop")
@@ -46,8 +106,8 @@ l = 1
 counter = 1
 
 # find start and stop for each loan
-for(i in 1:nrow(test_set)){
-  if(test_set$endIndicator[i]==1){
+for(i in 1:nrow(valid_set)){
+  if(valid_set$endIndicator[i]==1){
     loan_indices$stop[l]=i
     l=l+1
     if(l<=nrow(loan_indices)){
@@ -63,7 +123,6 @@ for(i in 1:nrow(loan_indices))
   a = loan_indices$start[i]
   b = loan_indices$stop[i]
   for(j in a:b){
-    print("a")
     if(j==a){
       pred_test[a]=pred_log_reg[a]
     }
@@ -79,7 +138,7 @@ for(i in 1:nrow(loan_indices))
 
 pred_test_val <- rep(0,length(pred_log_reg))
 pred_test_val[pred_test>0.08] <-1 
-table(pred_test_val,test_set$isDefault)
+table(pred_test_val,valid_set$isDefault)
 
 # for loop over start and stop for each loan
 
@@ -91,9 +150,8 @@ table(pred_test_val,test_set$isDefault)
 
 
 #ROC Curve
-library(ROCR)
 #does not work if no loans defaulted. Only works when there are two classes.
-pred1 = prediction(pred_test, test_set$isDefault)
+pred1 = prediction(pred_test, valid_set$isDefault)
 perf1 = performance(pred1, "tpr", "fpr")
 plot(perf1)
 auc1 <- performance(pred1,measure = "auc")

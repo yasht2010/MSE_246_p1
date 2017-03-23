@@ -64,8 +64,9 @@ GDP <- c(rep(0,length(df$ApprovalFiscalYear)))
 
 We do the following things:
 1. Add small business loan ratio (total small business loans issued/total small businesses per state )
-2. Average HPI Index by State for 1990-2016
+2. Average HPI Index by State for 1990-2016 and adding PR,GU,DC and VI
 3. Filtering out Loans which are canceled or exempt
+4. Unemployment data modification
 
 ```{r}
 set.seed(1)
@@ -77,6 +78,38 @@ hpi_state <- read.csv("hpi_state.csv", header=TRUE, stringsAsFactors=F)
 hpi_state$ProjectState = as.factor(hpi_state$ProjectState)
 df <- left_join(df, hpi_state, by=c("ProjectState", "ApprovalFiscalYear"))
 df$mn_hpi = as.numeric(df$mn_hpi)
+
+hpi_year_mean <- hpi_state %>% 
+  group_by(ApprovalFiscalYear) %>%
+  summarise(mn_hpi = mean(mn_hpi))
+hpi_year_mean$ProjectState <- "PR"
+hpi_year_mean <- hpi_year_mean[,c(3,1,2)]
+hpi_state <- rbind(hpi_state,hpi_year_mean)
+hpi_year_mean$ProjectState <- "GU"
+hpi_state <- rbind(hpi_state,hpi_year_mean)
+hpi_year_mean$ProjectState <- "DC"
+hpi_state <- rbind(hpi_state,hpi _year_mean)
+hpi_year_mean$ProjectState <- "VI"
+hpi_state <- rbind(hpi_state,hpi_year_mean)
+
+temp <- transpose(as.data.frame(rep(0,29))) 
+colnames(temp) <- colnames(unemployment_data)
+unemployment_data <- rbind(unemployment_data,temp)
+unemployment_data$X <- as.character(unemployment_data$X)
+unemployment_data[52,3] <- "PR"
+unemployment_data <- rbind(unemployment_data,temp)
+unemployment_data[53,3] <- "GU"
+unemployment_data <- rbind(unemployment_data,temp)
+unemployment_data[54,3] <- "DC"
+unemployment_data <- rbind(unemployment_data,temp)
+unemployment_data[55,3] <- "VI"
+
+for(j in 52:55){
+ for(i in 4:29){
+  unemployment_data[j,i] <- mean(unemployment_data[2:51,i])
+}
+}
+
 
 # Filtering out Loans which are canceled or exempt
 
@@ -148,6 +181,7 @@ interest_rates = interest_rates[1,]
 
 ```
 
+Create the multiple samples from each loan corresponding to 1 year each
 
 ```{r}
   # Initializing Matrix for Adding columns
@@ -175,10 +209,16 @@ interest_rates = interest_rates[1,]
     n=0
     unemployment_start_index=match(start,unemployment_data[1,])
     unemployment_state_index=match(df$BorrState[i],unemployment_data[,3])
-    GDP_NAICS_index=match(df$Naics2digits[i],GDPSectorData[,2])
+    if(is.na(df$Naics2digits[i])|df$Naics2digits[i]==99){
+      GDP_NAICS_index=2
+    }
+    else{
+      GDP_NAICS_index=match(df$Naics2digits[i],GDPSectorData[,2])
+    }
     GDP_start_index=match(start,GDPSectorData[1,])
     HPI_start_index=match(interaction(df$BorrState[i],start),
                           interaction(hpi_state$ProjectState, hpi_state$ApprovalFiscalYear))
+    
     if(stop<=2014){
       for (j in 1:periods) { 
         tempRow = matrix(0,nrow=1,ncol=24)
@@ -192,7 +232,7 @@ interest_rates = interest_rates[1,]
         tempRow[1,8]=TED[start-1990+j,2]
         tempRow[1,9]=SNP500[start-1990+j,1]
         tempRow[1,as.numeric(10:22)] = df_const[i,]
-
+        # endIndicator Initialisation
         if(df$isDefault[i]==1){
           if((start+n)==stop){tempRow[1,23]=1
           tempRow[1,24]=1}
@@ -219,7 +259,7 @@ interest_rates = interest_rates[1,]
         tempRow[1,8]=TED[start-1990+j,2]
         tempRow[1,9]=SNP500[start-1990+j,1]
         tempRow[1,10:22] = df_const[i,]
-      
+        # endIndicator Initialisation
         if(df$isDefault[i]==1){
           if((start+n)==stop){tempRow[1,23]=1
           tempRow[1,24]=1}
@@ -258,7 +298,17 @@ finalMatrix$tedSpread <-as.numeric(as.character(finalMatrix$tedSpread))
 finalMatrix$sandp500 <- as.numeric(as.character(finalMatrix$sandp500))
 finalMatrix$loanNum <- as.numeric(as.character(finalMatrix$loanNum))
 #finalMatrix$Defaultyn <- as.numeric(as.character(finalMatrix$loanNum))
-finalMatrix$isDefault <- as.numeric(as.character(finalMatrix$LoanNum))
+#finalMatrix$isDefault <- as.numeric(as.character(finalMatrix$LoanNum))
+
+finalMatrix$ThirdPartyDollars <- as.numeric(as.character(finalMatrix$ThirdPartyDollars))
+
+finalMatrix$ThirdPartyDollars[is.na(finalMatrix$ThirdPartyDollars)]<- 0
+finalMatrix$Naics2digits <- as.numeric(as.character(finalMatrix$Naics2digits))
+finalMatrix$Naics2digits[is.na(finalMatrix$Naics2digits)]<- 0
+finalMatrix$Naics2digits <- as.factor(finalMatrix$Naics2digits)
+finalMatrix$SBLR[is.na(finalMatrix$SBLR)]<- 0
+
+
 # Export file
 write.csv(finalMatrix, file="big_data_Matrix.csv", col.names=FALSE)
 
