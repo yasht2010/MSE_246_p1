@@ -257,21 +257,28 @@ maxloss <- sum(test500.1$GrossApproval)
 thresh5.1 <- 0.05*maxloss
 thresh15.1 <- 0.15*maxloss
 
-junior.tranche.1 <- ifelse(lossvector.1 > thresh5.1, min(c(100, (lossvector.1-thresh5.1)/thresh15.1)), 0)
-senior.tranche.1 <- ifelse(lossvector.1 > thresh15.1, (lossvector.1-thresh15.1)/maxloss, 0)
+junior.tranche.1 <- rep(0, length(lossvector.1))
+senior.tranche.1 <- rep(0, length(lossvector.1))
+
+for (i in 1:length(lossvector.1)) {
+  junior.tranche.1[i] <- ifelse(lossvector.1[i] > thresh5.1, min(100, 100*((lossvector.1[i]-thresh5.1)/(thresh15.1-thresh5.1))), 0)
+  
+  senior.tranche.1[i] <- ifelse(lossvector.1[i] > thresh15.1, min(100, 100*((lossvector.1[i]-thresh15.1)/(maxloss-thresh15.1))), 0)
+}
 
 junior.plot.1 <- ggplot() + geom_density(mapping=aes(x=junior.tranche.1))
 junior.plot.1
 senior.plot.1 <- ggplot() + geom_density(mapping=aes(x=senior.tranche.1))
+senior.plot.1
 
 
 ## FIVE YEAR LOSSES
 
 firstloss.5 <- rep(0,10000)
-loss.var95.5 <- rep(0,1000)
-loss.avar95.5 <- rep(0,1000)
-loss.var99.5 <- rep(0,1000)
-loss.avar99.5 <- rep(0,1000)
+loss.var95.5 <- rep(0,10000)
+loss.avar95.5 <- rep(0,10000)
+loss.var99.5 <- rep(0,10000)
+loss.avar99.5 <- rep(0,10000)
 
 # Simulate defaults
 for (i in 1:10000) {
@@ -318,11 +325,21 @@ lossvector.5 <- as.vector(loss.matrix.5)
 thresh5.5 <- 0.05*maxloss
 thresh15.5 <- 0.15*maxloss
 
-junior.tranche.5 <- ifelse(lossvector.5 > thresh5.5, min(c(100, (lossvector.5-thresh5.5)/thresh15.5)), 0)
-senior.tranche.5 <- ifelse(lossvector.5 > thresh15.5, (lossvector.5-thresh15.5)/maxloss, 0)
+junior.tranche.5 <- rep(0, length(lossvector.5))
+senior.tranche.5 <- rep(0, length(lossvector.5))
 
-junior.plot.5 <- hist(junior.tranche.5)
-senior.plot.5 <- hist(senior.tranche.5)
+for (i in 1:length(lossvector.5)) {
+  junior.tranche.5[i] <- ifelse(lossvector.5[i] > thresh5.5, min(100, 100*((lossvector.5[i]-thresh5.5)/(thresh15.5-thresh5.5))), 0)
+  
+  senior.tranche.5[i] <- ifelse(lossvector.5[i] > thresh15.5, min(100, 100*((lossvector.5[i]-thresh15.5)/(maxloss-thresh15.5))), 0)
+}
+
+junior.plot.5 <- ggplot() + geom_density(mapping=aes(x=junior.tranche.5))
+junior.plot.5
+
+senior.plot.5 <- ggplot() + geom_density(mapping=aes(x=senior.tranche.5))
+senior.plot.5
+
 ```
 
 
@@ -392,11 +409,21 @@ maxloss <- sum(test500.1$GrossApproval)
 np.thresh5.1 <- 0.05*maxloss
 np.thresh15.1 <- 0.15*maxloss
 
-np.junior.tranche.1 <- ifelse(np.lossvector.1 > np.thresh5.1, min(c(100, (np.lossvector.1-np.thresh5.1)/np.thresh15.1)), 0)
-np.senior.tranche.1 <- ifelse(np.lossvector.1 > np.thresh15.1, (np.lossvector.1-np.thresh15.1)/maxloss, 0)
+np.junior.tranche.1 <- rep(0, length(np.lossvector.1))
+np.senior.tranche.1 <- rep(0, length(np.lossvector.1))
 
-np.junior.plot.1 <- hist(np.junior.tranche.1)
-np.senior.plot.1 <- hist(np.senior.tranche.1)
+for (i in 1:length(np.lossvector.1)) {
+  np.junior.tranche.1[i] <- ifelse(np.lossvector.1[i] > np.thresh5.1, min(100, 100*((np.lossvector.1-np.thresh5.1)/(np.thresh15.1-np.thresh5.1))), 0)
+  
+  np.senior.tranche.1[i] <- ifelse(np.lossvector.1[i] > np.thresh15.1, min(100, 100*((np.lossvector.1-np.thresh15.1)/(maxloss-np.thresh15.1))), 0)
+}
+
+
+np.junior.plot.1 <- ggplot() + geom_density(mapping=aes(x=np.junior.tranche.1))
+np.junior.plot.1
+
+np.senior.plot.1 <- ggplot() + geom_density(mapping=aes(x=np.senior.tranche.1))
+np.senior.plot.1
 
 
 ## FIVE YEAR LOSSES
@@ -450,11 +477,21 @@ np.lossvector.5 <- as.vector(loss.matrix.5)
 np.thresh5.5 <- 0.05*maxloss
 np.thresh15.5 <- 0.15*maxloss
 
-np.junior.tranche.5 <- ifelse(np.lossvector.5 > np.thresh5.5, min(c(100, (np.lossvector.5-np.thresh5.5)/np.thresh15.5)), 0)
-np.senior.tranche.5 <- ifelse(np.lossvector.5 > np.thresh15.5, (np.lossvector.5-np.thresh15.5)/np.maxloss, 0)
+np.junior.tranche.5 <- rep(0, length(np.lossvector.5))
+np.senior.tranche.5 <- rep(0, length(np.lossvector.5))
 
-np.junior.plot.5 <- hist(np.junior.tranche.5)
-np.senior.plot.5 <- hist(np.senior.tranche.5)
+for(i in 1:length(np.lossvector.5)) {
+  np.junior.tranche.5[i] <- ifelse(np.lossvector.5[i] > np.tresh5.5, min(100, 100*((np.lossvector.5[i]-np.thresh5.5)/(np.thresh15.5-np.thresh5.5))), 0)
+  
+  np.senior.tranche.5[i] <- ifelse(np.lossvector.5[i] > np.thresh15.5, min(100, 100*((np.lossvector.5[i]-np.thresh15.5)/(maxloss-np.thresh15.5))), 0)
+}
+
+np.junior.plot.5 <- ggplot() + geom_density(mapping=aes(x=np.junior.tranche.5))
+np.junior.plot.5
+
+np.senior.plot.5 <- ggplot() + geom_density(mapping=aes(x=np.senior.tranche.5))
+np.senior.plot.5
+
 
 
 ```
