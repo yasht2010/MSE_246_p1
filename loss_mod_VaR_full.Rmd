@@ -209,7 +209,7 @@ for (i in 1:10000) {
   r.prob <- runif(1,0,1)
   
   def.events <- rep(0, nrow(def.probs.1))
-  def.events <- ifelse(def.probs.1$Prob1yr<=r.prob,1,0)
+  def.events <- ifelse(def.probs.1$Prob1yr>=r.prob,1,0)
   
   
   def.loss <- test.loss.1 * test500.1$GrossApproval * def.events
@@ -260,8 +260,9 @@ thresh15.1 <- 0.15*maxloss
 junior.tranche.1 <- ifelse(lossvector.1 > thresh5.1, min(c(100, (lossvector.1-thresh5.1)/thresh15.1)), 0)
 senior.tranche.1 <- ifelse(lossvector.1 > thresh15.1, (lossvector.1-thresh15.1)/maxloss, 0)
 
-junior.plot.1 <- hist(junior.tranche.1)
-senior.plot.1 <- hist(senior.tranche.1)
+junior.plot.1 <- ggplot() + geom_density(mapping=aes(x=junior.tranche.1))
+junior.plot.1
+senior.plot.1 <- ggplot() + geom_density(mapping=aes(x=senior.tranche.1))
 
 
 ## FIVE YEAR LOSSES
@@ -276,7 +277,7 @@ loss.avar99.5 <- rep(0,1000)
 for (i in 1:10000) {
   r.prob <- runif(1,0,1)
   
-  def.events <- ifelse(def.probs$Prob5yr<=r.prob,1,0)
+  def.events <- ifelse(def.probs$Prob5yr>=r.prob,1,0)
   def.loss <- test.loss.5 * test500.5$GrossApproval * def.events
   
   def.total.loss <- sum(def.loss)
@@ -296,7 +297,7 @@ for (i in 1:10000) {
   boot.loss.inds <- sample(1:length(nvals), length(nvals), replace=TRUE)
   boot.loss <- nvals[boot.loss.inds]
   
-  loss.matrix.1[i,] <- boot.loss
+  loss.matrix.5[i,] <- boot.loss
   
   # Calculating VaR
   loss.var95.5[i] <- quantile(boot.loss, probs=0.95,na.rm=TRUE)
@@ -342,8 +343,8 @@ set.seed(1)
 for (i in 1:10000) {
   r.prob <- runif(1,0,1)
   
-  def.events <- rep(0, nrow(def.probs))
-  def.events <- ifelse(def.probs$Prob1yr<=r.prob,1,0)
+  def.events <- rep(0, nrow(def.probs.1))
+  def.events <- ifelse(def.probs.1$Prob1yr<=r.prob,1,0)
   
   
   def.loss <- test500.1$GrossChargeOffAmount * def.events
@@ -354,7 +355,7 @@ for (i in 1:10000) {
 }
 
 # Create loss matrix
-nvals <- firstloss.1[firstloss.1>0]
+nvals <- np.firstloss.1[np.firstloss.1>0]
 np.loss.matrix.1 <- matrix(nrow=10000, ncol=length(nvals))
 
 # Plot losses
@@ -411,14 +412,14 @@ for (i in 1:10000) {
   r.prob <- runif(1,0,1)
   
   def.events <- ifelse(def.probs$Prob5yr<=r.prob,1,0)
-  def.loss <- test.loss * test500_set$GrossApproval * def.events
+  def.loss <- test.loss.5 * test500_set$GrossApproval * def.events
   
   def.total.loss <- sum(def.loss)
   np.firstloss.5[i] <- def.total.loss
 }
 
 # Create loss matrix
-nvals <- firstloss.5[firstloss.5>0]
+nvals <- np.firstloss.5[np.firstloss.5>0]
 np.loss.matrix.5 <- matrix(nrow=10000, ncol=length(nvals))
 
 # Plot losses
