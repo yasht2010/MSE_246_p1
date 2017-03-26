@@ -262,7 +262,7 @@ var.95.1.ci <- c(avar.95.1-1.96*var.95.1.sd, avar.95.1+1.96*var.95.1.sd)
 
 avar.99.1 <- mean(loss.var99.1/maxloss)
 var.99.1.sd <- sd(loss.var99.1/maxloss)
-var.99.1.sd <- c(avar.99.1-2.57*var.99.1.sd, avar.99.1+2.57*var.99.1.sd)
+var.99.1.ci <- c(avar.99.1-2.57*var.99.1.sd, avar.99.1+2.57*var.99.1.sd)
 
 
 
@@ -330,7 +330,7 @@ pl.95.5 <- ggplot() + geom_density(mapping=aes(x=(loss.var95.5/maxloss))) + xlab
 pl.95.5
 ggsave("par_var_595.png", pl.95.5)
 
-pl.99.5 <- ggplot() + geom_density(mapping=aes(x=(loss.var99.5/maxloss))) + xlab("VaR") + ylab("Density") + ggtitle("Parametric 5-year VaR (99%)") + coord_cartesian(xlim=c(37150000, 37250000))
+pl.99.5 <- ggplot() + geom_density(mapping=aes(x=(loss.var99.5/maxloss))) + xlab("VaR") + ylab("Density") + ggtitle("Parametric 5-year VaR (99%)") 
 pl.99.5
 ggsave("par_var_599.png", pl.99.5)
 
@@ -342,7 +342,7 @@ var.95.5.ci <- c(avar.95.5-1.96*var.95.5.sd, avar.95.5+1.96*var.95.5.sd)
 
 avar.99.5 <- mean(loss.var99.5/maxloss)
 var.99.5.sd <- sd(loss.var99.5/maxloss)
-var.99.5.sd <- c(avar.99.5-2.57*var.99.5.sd, avar.99.5+2.57*var.99.5.sd)
+var.99.5.ci <- c(avar.99.5-2.57*var.99.5.sd, avar.99.5+2.57*var.99.5.sd)
 
 
 
@@ -440,7 +440,7 @@ np.var.95.1.ci <- c(np.avar.95.1-1.96*np.var.95.1.sd, np.avar.95.1+1.96*np.var.9
 
 np.avar.99.1 <- mean(np.loss.var99.1/maxloss)
 np.var.99.1.sd <- sd(np.loss.var99.1/maxloss)
-np.var.99.1.sd <- c(np.avar.99.1-2.57*np.var.99.1.sd, np.avar.99.1+2.57*np.var.99.1.sd)
+np.var.99.1.ci <- c(np.avar.99.1-2.57*np.var.99.1.sd, np.avar.99.1+2.57*np.var.99.1.sd)
 
 
 
@@ -522,7 +522,7 @@ np.var.95.5.ci <- c(np.avar.95.5-1.96*np.var.95.5.sd, np.avar.95.5+1.96*np.var.9
 
 np.avar.99.5 <- mean(np.loss.var99.5/maxloss)
 np.var.99.5.sd <- sd(np.loss.var99.5/maxloss)
-np.var.99.5.sd <- c(np.avar.99.5-2.57*np.var.99.5.sd, np.avar.99.5+2.57*np.var.99.5.sd)
+np.var.99.5.ci <- c(np.avar.99.5-2.57*np.var.99.5.sd, np.avar.99.5+2.57*np.var.99.5.sd)
 
 
 
