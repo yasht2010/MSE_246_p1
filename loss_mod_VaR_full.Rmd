@@ -229,6 +229,7 @@ ls.1 <- ggplot() + geom_density(mapping=aes(x=nvals.1)) + ggtitle("Parametric on
 ls.1
 ggsave("par_loss_1.png", ls.1)
 
+maxloss <- sum(test500.1$GrossApproval)
 
 # Bootstrapping simulated values
 for (i in 1:10000) {
@@ -246,17 +247,28 @@ for (i in 1:10000) {
 
 
 # Plot VaR Values
-pl.95.1 <- ggplot() + geom_density(mapping=aes(x=loss.var95.1)) + xlab("VaR") + ylab("Density") + ggtitle("Parametric 1-year VaR (95%)") + coord_cartesian(xlim=c(36000000,38000000))
+pl.95.1 <- ggplot() + geom_density(mapping=aes(x=(loss.var95.1/maxloss))) + xlab("VaR") + ylab("Density") + ggtitle("Parametric 1-year VaR (95%)")
 pl.95.1
 ggsave("par_var_195.png", pl.95.1)
-pl.99.1 <- ggplot() + geom_density(mapping=aes(x=loss.var99.1)) + xlab("VaR") + ylab("Density") + ggtitle("Parametric 1-year VaR (99%)") + coord_cartesian(xlim=c(36000000,38000000))
+pl.99.1 <- ggplot() + geom_density(mapping=aes(x=(loss.var99.1/maxloss))) + xlab("VaR") + ylab("Density") + ggtitle("Parametric 1-year VaR (99%)")
 pl.99.1
 ggsave("par_var_199.png", pl.99.1)
+
+
+# AVaR & Confidence intervals
+avar.95.1 <- mean(loss.var95.1/maxloss)
+var.95.1.sd <- sd(loss.var95.1/maxloss)
+var.95.1.ci <- c(avar.95.1-1.96*var.95.1.sd, avar.95.1+1.96*var.95.1.sd)
+
+avar.99.1 <- mean(loss.var99.1/maxloss)
+var.99.1.sd <- sd(loss.var99.1/maxloss)
+var.99.1.sd <- c(avar.99.1-2.57*var.99.1.sd, avar.99.1+2.57*var.99.1.sd)
+
+
 
 # Tranches
 lossvector.1 <- as.vector(loss.matrix.1)
 
-maxloss <- sum(test500.1$GrossApproval)
 thresh5.1 <- 0.05*maxloss
 thresh15.1 <- 0.15*maxloss
 
@@ -314,13 +326,25 @@ for (i in 1:10000) {
 }
 
 # Plot VaR curves
-pl.95.5 <- ggplot() + geom_density(mapping=aes(x=loss.var95.5)) + xlab("VaR") + ylab("Density") + ggtitle("Parametric 5-year VaR (95%)") + coord_cartesian(xlim=c(37150000, 37250000))
+pl.95.5 <- ggplot() + geom_density(mapping=aes(x=(loss.var95.5/maxloss))) + xlab("VaR") + ylab("Density") + ggtitle("Parametric 5-year VaR (95%)")
 pl.95.5
 ggsave("par_var_595.png", pl.95.5)
 
-pl.99.5 <- ggplot() + geom_density(mapping=aes(x=loss.var99.5)) + xlab("VaR") + ylab("Density") + ggtitle("Parametric 5-year VaR (99%)") + coord_cartesian(xlim=c(37150000, 37250000))
+pl.99.5 <- ggplot() + geom_density(mapping=aes(x=(loss.var99.5/maxloss))) + xlab("VaR") + ylab("Density") + ggtitle("Parametric 5-year VaR (99%)") + coord_cartesian(xlim=c(37150000, 37250000))
 pl.99.5
 ggsave("par_var_599.png", pl.99.5)
+
+
+# AVaR & Confidence intervals
+avar.95.5 <- mean(loss.var95.5/maxloss)
+var.95.5.sd <- sd(loss.var95.5/maxloss)
+var.95.5.ci <- c(avar.95.5-1.96*var.95.5.sd, avar.95.5+1.96*var.95.5.sd)
+
+avar.99.5 <- mean(loss.var99.5/maxloss)
+var.99.5.sd <- sd(loss.var99.5/maxloss)
+var.99.5.sd <- c(avar.99.5-2.57*var.99.5.sd, avar.99.5+2.57*var.99.5.sd)
+
+
 
 # Tranches
 maxloss <- sum(test500.5$GrossApproval)
@@ -400,19 +424,30 @@ for (i in 1:10000) {
 
 
 # Plot VaR Values
-np.pl.95.1 <- ggplot() + geom_density(mapping=aes(x=np.loss.var95.1)) + xlab("VaR") + ylab("Density") + ggtitle("Non-parametric 1-year VaR (95%)")
+np.pl.95.1 <- ggplot() + geom_density(mapping=aes(x=(np.loss.var95.1/maxloss))) + xlab("VaR") + ylab("Density") + ggtitle("Non-parametric 1-year VaR (95%)")
 np.pl.95.1
 ggsave("np_var_195.png", np.pl.95.1)
 
-np.pl.99.1 <- ggplot() + geom_density(mapping=aes(x=np.loss.var99.1)) + xlab("VaR") + ylab("Density") + ggtitle("Non-parametric 1-year VaR (99%)")
+np.pl.99.1 <- ggplot() + geom_density(mapping=aes(x=(np.loss.var99.1/maxloss))) + xlab("VaR") + ylab("Density") + ggtitle("Non-parametric 1-year VaR (99%)")
 np.pl.99.1
 ggsave("np_var_199.png", np.pl.99.1)
+
+
+# AVaR & Confidence intervals
+np.avar.95.1 <- mean(np.loss.var95.1/maxloss)
+np.var.95.1.sd <- sd(np.loss.var95.1/maxloss)
+np.var.95.1.ci <- c(np.avar.95.1-1.96*np.var.95.1.sd, np.avar.95.1+1.96*np.var.95.1.sd)
+
+np.avar.99.1 <- mean(np.loss.var99.1/maxloss)
+np.var.99.1.sd <- sd(np.loss.var99.1/maxloss)
+np.var.99.1.sd <- c(np.avar.99.1-2.57*np.var.99.1.sd, np.avar.99.1+2.57*np.var.99.1.sd)
+
+
 
 
 # Tranches
 np.lossvector.1 <- as.vector(np.loss.matrix.1)
 
-maxloss <- sum(test500.1$GrossApproval)
 np.thresh5.1 <- 0.05*maxloss
 np.thresh15.1 <- 0.15*maxloss
 
@@ -471,13 +506,25 @@ for (i in 1:10000) {
 }
 
 # Plot VaR curves
-np.pl.95.5 <- ggplot() + geom_density(mapping=aes(x=np.loss.var95.5))+ xlab("VaR") + ylab("Density") + ggtitle("Non-parametric 5-year VaR (95%)")
+np.pl.95.5 <- ggplot() + geom_density(mapping=aes(x=(np.loss.var95.5/maxloss)))+ xlab("VaR") + ylab("Density") + ggtitle("Non-parametric 5-year VaR (95%)")
 np.pl.95.5
 ggsave("np_var_595.png", np.pl.95.5)
 
-np.pl.99.5 <- ggplot() + geom_density(mapping=aes(x=np.loss.var99.5)) + xlab("VaR") + ylab("Density") + ggtitle("Non-parametric 5-year VaR (99%)") + coord_cartesian(xlim=c(30460000, 30960600))
+np.pl.99.5 <- ggplot() + geom_density(mapping=aes(x=(np.loss.var99.5/maxloss))) + xlab("VaR") + ylab("Density") + ggtitle("Non-parametric 5-year VaR (99%)") 
 np.pl.99.5
 ggsave("np_var_599.png", np.pl.99.5)
+
+
+# AVaR & Confidence intervals
+np.avar.95.5 <- mean(np.loss.var95.5/maxloss)
+np.var.95.5.sd <- sd(np.loss.var95.5/maxloss)
+np.var.95.5.ci <- c(np.avar.95.5-1.96*np.var.95.5.sd, np.avar.95.5+1.96*np.var.95.5.sd)
+
+np.avar.99.5 <- mean(np.loss.var99.5/maxloss)
+np.var.99.5.sd <- sd(np.loss.var99.5/maxloss)
+np.var.99.5.sd <- c(np.avar.99.5-2.57*np.var.99.5.sd, np.avar.99.5+2.57*np.var.99.5.sd)
+
+
 
 # Tranches
 np.lossvector.5 <- as.vector(np.loss.matrix.5)
